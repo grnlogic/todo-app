@@ -1,0 +1,92 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model DailyMood {
+    id        String   @id
+    date      DateTime @unique
+    mood      MoodType
+    note      String?
+    energy    Int      @default(5)
+    createdAt DateTime @default(now())
+
+    @@index([date])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Quote {
+    id        String   @id
+    text      String
+    author    String?
+    category  String?
+    isActive  Boolean  @default(true)
+    createdAt DateTime @default(now())
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Task {
+    id               String    @id
+    title            String
+    date             DateTime
+    time             String?
+    completed        Boolean   @default(false)
+    priority         Priority  @default(Medium)
+    createdAt        DateTime  @default(now())
+    updatedAt        DateTime
+    description      String?
+    category         Category? @default(Other)
+    moodBefore       MoodType?
+    moodAfter        MoodType?
+    estimatedMinutes Int?
+    actualMinutes    Int?
+    tags             String[]  @default([])
+    points           Int?      @default(0)
+    streak           Int?      @default(0)
+    reminderSent     Boolean?  @default(false)
+    isRecurring      Boolean?  @default(false)
+    recurrence       String?
+    notes            String?
+    completedAt      DateTime?
+
+    @@index([category])
+    @@index([completed])
+    @@index([date])
+    @@index([priority])
+}
+
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+// model to_do_app {
+// @@map("to-do-app")
+// }
+
+enum Category {
+    Work
+    Personal
+    Health
+    Learning
+    Social
+    Finance
+    Other
+}
+
+enum MoodType {
+    VeryHappy
+    Happy
+    Neutral
+    Sad
+    Stressed
+}
+
+enum Priority {
+    High
+    Medium
+    Low
+}
