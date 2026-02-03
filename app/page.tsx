@@ -6,8 +6,9 @@ import HomeView from "@/components/HomeView";
 import TaskListView from "@/components/TaskListView";
 import CalendarView from "@/components/CalendarView";
 import SettingsView from "@/components/SettingsView";
+import ScheduleView from "@/components/ScheduleView";
 import AddTaskModal from "@/components/AddTaskModal";
-import { Task, Priority, Tab } from "@/types";
+import { Task, Priority, Tab, Course } from "@/types";
 import { AnimatePresence } from "framer-motion";
 import { useNotifications } from "@/hooks/useNotifications";
 
@@ -154,10 +155,142 @@ export default function Home() {
     }
   };
 
+  const [courses, setCourses] = useState<Course[]>([]);
+
+  // Load courses from API
+  useEffect(() => {
+    const loadCourses = async () => {
+      setError(null);
+      try {
+        const res = await fetch(`${API_BASE}/api/courses`);
+        if (!res.ok) throw new Error("Failed to load courses");
+        const data = await res.json();
+        setCourses(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load courses");
+      }
+    };
+
+    loadCourses();
+  }, []);
+
+  // Calculate next occurrence of a class
+  const getNextClassDate = (dayName: string, timeStr: string): Date => {
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const targetDayIndex = days.indexOf(dayName);
+    if (targetDayIndex === -1) return new Date(); // Fallback
+
+    const now = new Date();
+    const currentDayIndex = now.getDay();
+
+    let daysUntil = targetDayIndex - currentDayIndex;
+    const [hours, minutes] = timeStr.split(":").map(Number);
+
+    // Create candidate date for today
+    const candidate = new Date();
+    candidate.setHours(hours, minutes, 0, 0);
+
+    // If today is the day, check if time has passed
+    if (daysUntil === 0) {
+      if (candidate.getTime() < now.getTime()) {
+        daysUntil = 7; // Next week
+      }
+    } else if (daysUntil < 0) {
+      daysUntil += 7;
+    }
+
+    const nextDate = new Date();
+    nextDate.setDate(now.getDate() + daysUntil);
+    nextDate.setHours(hours, minutes, 0, 0);
+    return nextDate;
+  };
+
+  // Schedule notification for a course
+  const scheduleCourseNotification = async (course: Course) => {
+    try {
+      const nextClass = getNextClassDate(course.day, course.startTime);
+
+      // 2 hours before
+      const notificationTime = new Date(
+        nextClass.getTime() - 2 * 60 * 60 * 1000,
+      );
+
+      // If notification time is in the past (e.g. class is in 1 hour), don't schedule or schedule for next week?
+      // For simplicity, we only schedule if it's in the future.
+      if (notificationTime.getTime() <= Date.now()) {
+        // If less than 2 hours to class, maybe skip or notify immediately?
+        // User requirement: "2 jam sebelum". If < 2 hrs, logic implies we missed the window for this specific instance.
+        return;
+      }
+
+      const token = await requestPermission();
+      if (!token) return;
+
+      await fetch(`${API_BASE}/api/notifications/schedule`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: course.id, // Reuse taskId field for courseId
+          title: `Upcoming Class: ${course.name}`,
+          body: `Class starts at ${course.startTime} in ${course.room}. Don't be late!`,
+          scheduleTime: notificationTime.toISOString(),
+          userId: "default-user",
+          token: token,
+          data: {
+            taskId: course.id,
+            url: "/",
+            type: "course",
+          },
+        }),
+      });
+      console.log(
+        `Scheduled notification for ${course.name} at ${notificationTime.toLocaleString()}`,
+      );
+    } catch (error) {
+      console.error("Failed to schedule course notification", error);
+    }
+  };
+
+  const handleAddCourse = async (newCourse: Course) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/courses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newCourse),
+      });
+      if (!res.ok) throw new Error("Failed to add course");
+      const created = await res.json();
+      setCourses((prev) => [...prev, created]);
+      scheduleCourseNotification(created);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add course");
+    }
+  };
+
+  const handleDeleteCourse = async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/courses/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete course");
+      setCourses((prev) => prev.filter((c) => c.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete course");
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case "home":
-        return <HomeView tasks={tasks} userName="Fajar" />;
+        return <HomeView tasks={tasks} courses={courses} userName="Fajar" />;
       case "tasks":
         return (
           <TaskListView
@@ -166,12 +299,20 @@ export default function Home() {
             onDeleteTask={handleDeleteTask}
           />
         );
+      case "schedule":
+        return (
+          <ScheduleView
+            courses={courses}
+            onAddCourse={handleAddCourse}
+            onDeleteCourse={handleDeleteCourse}
+          />
+        );
       case "calendar":
         return <CalendarView tasks={tasks} />;
       case "settings":
         return <SettingsView tasks={tasks} />;
       default:
-        return <HomeView tasks={tasks} userName="Fajar" />;
+        return <HomeView tasks={tasks} courses={courses} userName="Fajar" />;
     }
   };
 

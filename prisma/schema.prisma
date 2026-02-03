@@ -130,3 +130,29 @@ enum NotificationStatus {
     Sent
     Failed
 }
+
+model Course {
+    id        String    @id @default(uuid())
+    name      String
+    lecturer  String
+    room      String
+    day       DayOfWeek
+    startTime String
+    endTime   String
+    userId    String?   @default("default-user")
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+
+    @@index([day])
+    @@index([userId])
+}
+
+enum DayOfWeek {
+    Monday
+    Tuesday
+    Wednesday
+    Thursday
+    Friday
+    Saturday
+    Sunday
+}

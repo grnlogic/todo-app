@@ -144,9 +144,9 @@ const TaskListView: React.FC<TaskListViewProps> = ({
               </button>
 
               {/* Content */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <h3
-                  className={`font-medium text-base transition-all ${
+                  className={`font-medium text-base transition-all break-words ${
                     task.completed
                       ? "text-slate-500 line-through decoration-slate-600"
                       : "text-slate-100"

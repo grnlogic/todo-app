@@ -204,9 +204,9 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks }) => {
                       <div
                         className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${task.completed ? "bg-slate-600" : "bg-violet-400"}`}
                       />
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <span
-                          className={`block font-medium ${task.completed ? "text-slate-500 line-through" : "text-slate-200"}`}
+                          className={`block font-medium break-words ${task.completed ? "text-slate-500 line-through" : "text-slate-200"}`}
                         >
                           {task.title}
                         </span>

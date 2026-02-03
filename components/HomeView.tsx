@@ -1,21 +1,23 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Task, Priority } from "@/types";
+import { Task, Priority, Course } from "@/types";
 import { motion } from "framer-motion";
-import { Clock, CheckCircle2, Flame, ArrowUpRight } from "lucide-react";
+import { Clock, CheckCircle2, Flame, ArrowUpRight, MapPin, User } from "lucide-react";
 import { format, subDays, isSameDay } from "date-fns";
 
 interface HomeViewProps {
   tasks: Task[];
+  courses: Course[];
   userName: string;
 }
 
-const HomeView: React.FC<HomeViewProps> = ({ tasks, userName }) => {
+const HomeView: React.FC<HomeViewProps> = ({ tasks, courses = [], userName }) => {
   // Greeting Logic
   const greeting = useMemo(() => {
     const hours = new Date().getHours();
-    if (hours < 12) return "Good Morning";
+    if (hours < 11) return "Good Morning";
+    if (hours < 15) return "Selamat Siang";
     if (hours < 18) return "Good Afternoon";
     return "Good Evening";
   }, []);
@@ -162,8 +164,40 @@ const HomeView: React.FC<HomeViewProps> = ({ tasks, userName }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="space-y-4 h-full"
+            className="space-y-4 h-full flex flex-col"
           >
+             {/* Today's Schedule */}
+             <div className="bg-slate-900/60 border border-white/5 rounded-3xl p-5 backdrop-blur-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-white">Class Schedule</h2>
+                  <span className="text-xs text-slate-500">Today</span>
+                </div>
+                <div className="space-y-3">
+                  {courses
+                    .filter(c => c.day === format(new Date(), 'EEEE') as any)
+                    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                    .map(course => (
+                      <div key={course.id} className="flex items-center space-x-3 bg-slate-800/40 p-3 rounded-2xl border border-white/5">
+                        <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400 font-bold text-xs flex-shrink-0">
+                          {course.startTime.split(':')[0]}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-medium text-slate-200 truncate">{course.name}</h4>
+                          <div className="flex items-center text-xs text-slate-500 mt-0.5 space-x-2">
+                             <span className="flex items-center"><MapPin size={10} className="mr-1" /> {course.room}</span>
+                             <span className="flex items-center"><User size={10} className="mr-1" /> {course.lecturer}</span>
+                          </div>
+                        </div>
+                      </div>
+                  ))}
+                  {courses.filter(c => c.day === format(new Date(), 'EEEE') as any).length === 0 && (
+                     <div className="text-center py-4 text-slate-500 text-sm">
+                        No classes today. Enjoy! 🎉
+                     </div>
+                  )}
+                </div>
+             </div>
+
             <div className="flex items-center space-x-2">
               <Flame
                 className="text-orange-400"
@@ -246,7 +280,7 @@ const HomeView: React.FC<HomeViewProps> = ({ tasks, userName }) => {
                         }`}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-100 truncate">
+                        <p className="text-sm font-semibold text-slate-100 break-words">
                           {task.title}
                         </p>
                         <p className="text-xs text-slate-500">

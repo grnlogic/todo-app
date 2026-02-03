@@ -8,6 +8,7 @@ import {
   Settings,
   Plus,
   Sparkles,
+  BookOpen,
 } from "lucide-react";
 import { Tab } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -63,6 +64,12 @@ const Layout: React.FC<LayoutProps> = ({
               onClick={() => setActiveTab("tasks")}
               icon={<CheckSquare size={20} />}
               label="Tasks"
+            />
+            <DesktopNavItem
+              active={activeTab === "schedule"}
+              onClick={() => setActiveTab("schedule")}
+              icon={<BookOpen size={20} />}
+              label="Jadwal"
             />
             <DesktopNavItem
               active={activeTab === "calendar"}
@@ -142,6 +149,13 @@ const Layout: React.FC<LayoutProps> = ({
               onClick={() => setActiveTab("tasks")}
               icon={<CheckSquare size={24} />}
               label="Tasks"
+            />
+
+            <NavButton
+              active={activeTab === "schedule"}
+              onClick={() => setActiveTab("schedule")}
+              icon={<BookOpen size={24} />}
+              label="Jadwal"
             />
 
             {/* Floating Add Button (Mobile) */}

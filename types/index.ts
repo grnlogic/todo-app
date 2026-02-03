@@ -76,7 +76,17 @@ export interface Achievement {
   createdAt: Date;
 }
 
-export type Tab = 'home' | 'tasks' | 'calendar' | 'settings';
+export interface Course {
+  id: string;
+  name: string;
+  lecturer: string;
+  room: string;
+  day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+  startTime: string; // HH:mm
+  endTime: string;   // HH:mm
+}
+
+export type Tab = 'home' | 'tasks' | 'calendar' | 'schedule' | 'settings';
 
 export interface ThemeConfig {
   mode: 'dark' | 'light';
