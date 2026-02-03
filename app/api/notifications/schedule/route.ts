@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 // Schedule a notification for a task
 export async function POST(request: NextRequest) {
   try {
-    const { taskId, title, scheduleTime, userId = 'default-user' } = await request.json();
+    const prismaAny = prisma as any;
+    const {
+      taskId,
+      title,
+      scheduleTime,
+      userId = 'default-user',
+      body,
+      data,
+      token,
+    } = await request.json();
     
     if (!taskId || !title || !scheduleTime) {
       return NextResponse.json(
@@ -22,27 +32,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Implement scheduling logic
-    // Options:
-    // 1. Use Firebase Cloud Functions with scheduled functions
-    // 2. Use a job queue (Bull, BullMQ, etc.)
-    // 3. Use cron jobs with database
-    // 4. Use third-party service (Pusher, OneSignal, etc.)
-    
-    console.log('Notification scheduled:', {
-      taskId,
-      title,
-      scheduleTime: scheduledDate,
-      delayMs: scheduledDate.getTime() - now.getTime()
+    const resolvedToken = token
+      ? token
+      : await prismaAny.fcmToken
+          .findFirst({
+            where: { userId },
+            orderBy: { lastSeenAt: 'desc' },
+          })
+          .then((t: { token?: string | null } | null) => t?.token ?? null);
+
+    const schedule = await prismaAny.notificationSchedule.create({
+      data: {
+        id: crypto.randomUUID(),
+        taskId,
+        userId,
+        token: resolvedToken,
+        title,
+        body: body || `Don't forget: ${title}`,
+        data: data || { taskId, url: '/' },
+        scheduledAt: scheduledDate,
+      },
     });
 
-    // For demonstration, you could use setTimeout for short delays
-    // But in production, use proper job queue or cloud functions
-    
     return NextResponse.json({
       success: true,
       message: 'Notification scheduled',
-      scheduledFor: scheduledDate.toISOString()
+      scheduledFor: scheduledDate.toISOString(),
+      id: schedule.id,
+      hasToken: Boolean(resolvedToken),
     });
   } catch (error) {
     console.error('Error scheduling notification:', error);
@@ -56,10 +73,23 @@ export async function POST(request: NextRequest) {
 // Get scheduled notifications
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Fetch scheduled notifications from database
+    const prismaAny = prisma as any;
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId') || 'default-user';
+    const status = searchParams.get('status');
+
+    const notifications = await prismaAny.notificationSchedule.findMany({
+      where: {
+        userId,
+        ...(status ? { status: status as any } : {}),
+      },
+      orderBy: { scheduledAt: 'asc' },
+      take: 50,
+    });
+
     return NextResponse.json({
       success: true,
-      notifications: []
+      notifications,
     });
   } catch (error) {
     return NextResponse.json(

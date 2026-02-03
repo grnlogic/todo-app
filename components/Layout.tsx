@@ -33,7 +33,7 @@ const Layout: React.FC<LayoutProps> = ({
 
   return (
     // Outer Container: Handles full screen background for desktop
-    <div className="flex h-screen w-full bg-slate-950 md:items-center md:justify-center md:p-6 overflow-hidden">
+    <div className="flex w-full bg-slate-950 md:items-center md:justify-center md:p-6 overflow-hidden app-shell">
       {/* App "Window" Wrapper for Desktop */}
       <div className="flex flex-col md:flex-row h-full w-full md:max-w-6xl md:h-[90vh] bg-slate-950 relative overflow-hidden md:rounded-3xl md:shadow-2xl md:border md:border-white/5 transition-all duration-300">
         {/* Background Gradient Orbs */}
@@ -93,7 +93,7 @@ const Layout: React.FC<LayoutProps> = ({
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto pb-24 md:pb-0 px-6 pt-6 md:p-10 z-10 scroll-smooth relative">
+        <main className="flex-1 overflow-y-auto pb-0 md:pb-0 px-6 pt-6 md:p-10 z-10 scroll-smooth relative mobile-content-safe">
           <div className="md:hidden mb-6">
             <div className="flex items-center justify-between">
               <div>
@@ -128,8 +128,8 @@ const Layout: React.FC<LayoutProps> = ({
         </main>
 
         {/* Bottom Navigation (Mobile Only) */}
-        <nav className="md:hidden absolute bottom-0 left-0 w-full h-20 bg-slate-900/80 backdrop-blur-xl border-t border-white/5 z-50 rounded-t-3xl">
-          <div className="flex justify-between items-center px-6 h-full relative">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-xl border-t border-white/5 z-50 rounded-t-3xl mobile-nav-safe">
+          <div className="flex justify-between items-center px-6 h-20 relative">
             <NavButton
               active={activeTab === "home"}
               onClick={() => setActiveTab("home")}

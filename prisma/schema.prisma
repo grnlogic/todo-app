@@ -60,6 +60,40 @@ model Task {
     @@index([priority])
 }
 
+model FcmToken {
+    id         String   @id
+    userId     String
+    token      String
+    deviceName String?
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+    lastSeenAt DateTime @default(now())
+
+    @@unique([userId, token])
+    @@index([userId])
+}
+
+model NotificationSchedule {
+    id          String             @id
+    taskId      String
+    userId      String
+    token       String?
+    title       String
+    body        String?
+    data        Json?
+    scheduledAt DateTime
+    status      NotificationStatus @default(Pending)
+    sentAt      DateTime?
+    error       String?
+    createdAt   DateTime           @default(now())
+    updatedAt   DateTime           @updatedAt
+
+    @@index([taskId])
+    @@index([userId])
+    @@index([scheduledAt])
+    @@index([status])
+}
+
 /// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -89,4 +123,10 @@ enum Priority {
     High
     Medium
     Low
+}
+
+enum NotificationStatus {
+    Pending
+    Sent
+    Failed
 }

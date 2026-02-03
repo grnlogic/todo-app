@@ -14,7 +14,10 @@ interface AddTaskModalProps {
     date: Date;
     priority: Priority;
     time: string;
-    reminderType?: string;
+    reminder?: {
+      amount: number;
+      unit: "minutes" | "hours" | "days";
+    };
   }) => void;
 }
 
@@ -27,7 +30,12 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
   const [time, setTime] = useState(format(new Date(), "HH:mm"));
   const [date, setDate] = useState(new Date());
-  const [reminderType, setReminderType] = useState<string>("none");
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [reminderAmount, setReminderAmount] = useState(60);
+  const [reminderUnit, setReminderUnit] = useState<
+    "minutes" | "hours" | "days"
+  >("minutes");
+  const [showCustomReminder, setShowCustomReminder] = useState(false);
 
   const [isDesktop, setIsDesktop] = useState(false);
 
@@ -40,9 +48,23 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
 
   const handleSave = () => {
     if (!title.trim()) return;
-    onSave({ title, date, priority, time, reminderType });
+    onSave({
+      title,
+      date,
+      priority,
+      time,
+      reminder: reminderEnabled
+        ? {
+            amount: Math.max(1, Number(reminderAmount) || 0),
+            unit: reminderUnit,
+          }
+        : undefined,
+    });
     setTitle("");
-    setReminderType("none");
+    setReminderEnabled(false);
+    setReminderAmount(60);
+    setReminderUnit("minutes");
+    setShowCustomReminder(false);
     onClose();
   };
 
@@ -190,29 +212,102 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
           </div>
 
           {/* Reminder Selection */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <label className="text-xs font-bold text-slate-500 uppercase flex items-center">
               <Bell size={12} className="mr-1" /> Reminder
             </label>
             <div className="flex space-x-3">
-              {[
-                { value: "none", label: "None" },
-                { value: "1hour", label: "1 Hour Before" },
-                { value: "1day", label: "1 Day Before" },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setReminderType(option.value)}
-                  className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all border ${
-                    reminderType === option.value
-                      ? "bg-blue-500/20 text-blue-400 border-blue-500/50"
-                      : "bg-slate-800 border-transparent text-slate-500 hover:bg-slate-700"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
+              <button
+                onClick={() => {
+                  setReminderEnabled(false);
+                  setShowCustomReminder(false);
+                }}
+                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                  !reminderEnabled
+                    ? "bg-blue-500/20 text-blue-400 border-blue-500/50"
+                    : "bg-slate-800 border-transparent text-slate-500 hover:bg-slate-700"
+                }`}
+              >
+                None
+              </button>
+              <button
+                onClick={() => {
+                  setReminderEnabled(true);
+                  setReminderAmount(1);
+                  setReminderUnit("hours");
+                  setShowCustomReminder(false);
+                }}
+                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                  reminderEnabled &&
+                  reminderAmount === 1 &&
+                  reminderUnit === "hours" &&
+                  !showCustomReminder
+                    ? "bg-blue-500/20 text-blue-400 border-blue-500/50"
+                    : "bg-slate-800 border-transparent text-slate-500 hover:bg-slate-700"
+                }`}
+              >
+                1 Hour Before
+              </button>
+              <button
+                onClick={() => {
+                  setReminderEnabled(true);
+                  setReminderAmount(1);
+                  setReminderUnit("days");
+                  setShowCustomReminder(false);
+                }}
+                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all border ${
+                  reminderEnabled &&
+                  reminderAmount === 1 &&
+                  reminderUnit === "days" &&
+                  !showCustomReminder
+                    ? "bg-blue-500/20 text-blue-400 border-blue-500/50"
+                    : "bg-slate-800 border-transparent text-slate-500 hover:bg-slate-700"
+                }`}
+              >
+                1 Day Before
+              </button>
             </div>
+
+            <button
+              onClick={() => {
+                setReminderEnabled(true);
+                setShowCustomReminder(true);
+              }}
+              className={`w-full py-2.5 rounded-xl text-xs font-semibold transition-all border ${
+                reminderEnabled && showCustomReminder
+                  ? "bg-slate-700 text-slate-200 border-slate-600"
+                  : "bg-slate-800 text-slate-500 border-transparent hover:bg-slate-700"
+              }`}
+            >
+              Custom Reminder
+            </button>
+
+            {reminderEnabled && showCustomReminder && (
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min={1}
+                  value={reminderAmount}
+                  onChange={(e) =>
+                    setReminderAmount(Number(e.target.value) || 1)
+                  }
+                  className="w-24 bg-slate-950/50 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-violet-500"
+                />
+                <select
+                  value={reminderUnit}
+                  onChange={(e) =>
+                    setReminderUnit(
+                      e.target.value as "minutes" | "hours" | "days",
+                    )
+                  }
+                  className="flex-1 bg-slate-950/50 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-violet-500"
+                >
+                  <option value="minutes">Minutes before</option>
+                  <option value="hours">Hours before</option>
+                  <option value="days">Days before</option>
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Save Button */}

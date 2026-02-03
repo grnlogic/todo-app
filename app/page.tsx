@@ -9,6 +9,7 @@ import SettingsView from "@/components/SettingsView";
 import AddTaskModal from "@/components/AddTaskModal";
 import { Task, Priority, Tab } from "@/types";
 import { AnimatePresence } from "framer-motion";
+import { useNotifications } from "@/hooks/useNotifications";
 
 // Use Next.js API routes
 const API_BASE = "";
@@ -19,6 +20,7 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { requestPermission } = useNotifications();
 
   const normalizeTask = (task: Task & { date: string | Date }): Task => ({
     ...task,
@@ -49,6 +51,10 @@ export default function Home() {
     date: Date;
     priority: Priority;
     time: string;
+    reminder?: {
+      amount: number;
+      unit: "minutes" | "hours" | "days";
+    };
   }) => {
     try {
       const res = await fetch(`${API_BASE}/api/tasks`, {
@@ -69,6 +75,47 @@ export default function Home() {
         console.log("Updated tasks:", updated);
         return updated;
       });
+      if (newTask.reminder) {
+        const token = await requestPermission();
+        if (!token) {
+          setError(
+            "Notification permission not granted. Reminder not scheduled.",
+          );
+          setIsAddModalOpen(false);
+          return;
+        }
+        const scheduledAt = new Date(newTask.date);
+        const [h, m] = newTask.time.split(":").map(Number);
+        scheduledAt.setHours(h || 0, m || 0, 0, 0);
+
+        const offsetMs =
+          newTask.reminder.unit === "minutes"
+            ? newTask.reminder.amount * 60 * 1000
+            : newTask.reminder.unit === "hours"
+              ? newTask.reminder.amount * 60 * 60 * 1000
+              : newTask.reminder.amount * 24 * 60 * 60 * 1000;
+
+        const reminderTime = new Date(scheduledAt.getTime() - offsetMs);
+        if (reminderTime.getTime() <= Date.now()) {
+          setError("Reminder time must be in the future.");
+        } else {
+          await fetch(`${API_BASE}/api/notifications/schedule`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              taskId: created.id,
+              title: created.title,
+              scheduleTime: reminderTime.toISOString(),
+              userId: "default-user",
+              token: token || undefined,
+              data: {
+                taskId: created.id,
+                url: "/",
+              },
+            }),
+          });
+        }
+      }
       setIsAddModalOpen(false);
     } catch (err) {
       console.error("Error adding task:", err);

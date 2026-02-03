@@ -19,6 +19,7 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
 }
 
 /* Custom Scrollbar */
@@ -56,5 +57,21 @@ html {
 /* Prevent layout shift */
 * {
   box-sizing: border-box;
+}
+
+/* Mobile viewport + safe area helpers */
+.app-shell {
+  min-height: 100vh;
+  height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
+}
+
+.mobile-nav-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.mobile-content-safe {
+  padding-bottom: calc(7rem + env(safe-area-inset-bottom));
 }
 

@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 // Save FCM token for a user
 export async function POST(request: NextRequest) {
   try {
-    const { token, userId = 'default-user' } = await request.json();
+    const { token, userId = 'default-user', deviceName } = await request.json();
     
     if (!token) {
       return NextResponse.json(
@@ -13,16 +13,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Save token to database
-    // For now, just log it
-    console.log('FCM Token saved:', { userId, token });
-    
-    // In production, you would save this to a database
-    // await prisma.fcmToken.upsert({
-    //   where: { userId },
-    //   update: { token, updatedAt: new Date() },
-    //   create: { userId, token }
-    // });
+    await prisma.fcmToken.upsert({
+      where: {
+        userId_token: {
+          userId,
+          token,
+        },
+      },
+      update: {
+        deviceName: deviceName || null,
+        lastSeenAt: new Date(),
+      },
+      create: {
+        id: crypto.randomUUID(),
+        userId,
+        token,
+        deviceName: deviceName || null,
+        lastSeenAt: new Date(),
+      },
+    });
 
     return NextResponse.json({
       success: true,
