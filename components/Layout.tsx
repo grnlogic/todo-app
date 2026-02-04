@@ -205,18 +205,12 @@ const NavButton: React.FC<NavButtonProps> = ({
     <button
       onClick={onClick}
       className={`flex flex-col items-center justify-center space-y-0.5 py-2 transition-all duration-300 ${
-        isSpecial
-          ? "text-violet-400 hover:text-violet-300"
-          : active
-            ? "text-violet-400"
-            : "text-slate-400 hover:text-slate-200"
+        active ? "text-violet-400" : "text-slate-400 hover:text-slate-200"
       }`}
     >
-      <div
-        className={`relative p-1 rounded-lg transition-all ${isSpecial ? "bg-violet-500/15" : ""}`}
-      >
+      <div className="relative p-1 rounded-lg transition-all">
         {icon}
-        {active && !isSpecial && (
+        {active && (
           <motion.div
             layoutId="active-indicator-mobile"
             className="absolute -bottom-1 left-1/2 w-5 h-0.5 bg-violet-400 rounded-full transform -translate-x-1/2"
@@ -224,11 +218,7 @@ const NavButton: React.FC<NavButtonProps> = ({
           />
         )}
       </div>
-      <span
-        className={`text-[10px] font-medium ${isSpecial ? "text-violet-400" : ""}`}
-      >
-        {label}
-      </span>
+      <span className="text-[10px] font-medium">{label}</span>
     </button>
   );
 };

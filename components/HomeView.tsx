@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Task, Priority, Course } from "@/types";
 import { motion } from "framer-motion";
 import {
@@ -24,6 +24,28 @@ const HomeView: React.FC<HomeViewProps> = ({
   courses = [],
   userName,
 }) => {
+  // Daily Boost State
+  const [dailyBoost, setDailyBoost] = useState<{
+    mood: { mood: string; energy: number; note?: string } | null;
+    quote: { text: string; author?: string } | null;
+  }>({ mood: null, quote: null });
+
+  // Fetch daily boost data
+  useEffect(() => {
+    const fetchDailyBoost = async () => {
+      try {
+        const res = await fetch("/api/daily-boost");
+        if (res.ok) {
+          const data = await res.json();
+          setDailyBoost(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch daily boost:", error);
+      }
+    };
+    fetchDailyBoost();
+  }, []);
+
   // Greeting Logic
   const greeting = useMemo(() => {
     const hours = new Date().getHours();
@@ -106,7 +128,7 @@ const HomeView: React.FC<HomeViewProps> = ({
   const isTomorrowSunday = tomorrowDayName === "Sunday";
 
   return (
-    <div className="space-y-10 pt-4">
+    <div className="space-y-10 pt-4 pb-32 md:pb-0">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end md:justify-between space-y-4 md:space-y-0">
         <div className="space-y-1">
@@ -474,14 +496,27 @@ const HomeView: React.FC<HomeViewProps> = ({
           <div className="bg-slate-900/60 border border-white/5 rounded-3xl p-5">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-semibold text-white">Daily Boost</h4>
-              <span className="text-xs text-slate-500">Tip</span>
+              {dailyBoost.mood && (
+                <span className="text-xs text-slate-500">
+                  {dailyBoost.mood.mood}
+                </span>
+              )}
             </div>
             <p className="text-sm text-slate-400 mt-3">
-              Start with the smallest task to build momentum. Progress beats
-              perfection.
+              {dailyBoost.quote?.text ||
+                "Start with the smallest task to build momentum. Progress beats perfection."}
             </p>
+            {dailyBoost.quote?.author && (
+              <p className="text-xs text-slate-500 mt-2 italic">
+                — {dailyBoost.quote.author}
+              </p>
+            )}
             <div className="mt-4 inline-flex items-center px-3 py-1.5 rounded-full bg-violet-500/10 text-violet-400 text-xs font-semibold">
-              Keep going ✨
+              {dailyBoost.mood ? (
+                <span>Energy: {dailyBoost.mood.energy}/10 ⚡</span>
+              ) : (
+                <span>Keep going ✨</span>
+              )}
             </div>
           </div>
         </div>

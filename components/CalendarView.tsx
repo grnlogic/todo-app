@@ -42,7 +42,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks }) => {
   const monthlyCompleted = monthlyTasks.filter((t) => t.completed).length;
 
   return (
-    <div className="space-y-6 pt-2 h-full flex flex-col">
+    <div className="space-y-6 pt-2 pb-32 md:pb-0 h-full flex flex-col">
       {/* Month Navigation */}
       <div className="flex items-center justify-between px-2 mb-2">
         <h2 className="text-2xl font-bold text-white">
@@ -183,7 +183,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks }) => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="bg-slate-900 border border-white/5 rounded-3xl p-6 h-full min-h-[300px]"
+              className="bg-slate-900 border border-white/5 rounded-3xl p-6 mb-32 md:mb-0"
             >
               <div className="mb-6 pb-4 border-b border-white/5">
                 <h3 className="text-slate-200 font-bold text-lg">
