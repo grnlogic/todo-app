@@ -3,8 +3,15 @@
 import React, { useMemo } from "react";
 import { Task, Priority, Course } from "@/types";
 import { motion } from "framer-motion";
-import { Clock, CheckCircle2, Flame, ArrowUpRight, MapPin, User } from "lucide-react";
-import { format, subDays, isSameDay } from "date-fns";
+import {
+  Clock,
+  CheckCircle2,
+  Flame,
+  ArrowUpRight,
+  MapPin,
+  User,
+} from "lucide-react";
+import { format, subDays, isSameDay, addDays } from "date-fns";
 
 interface HomeViewProps {
   tasks: Task[];
@@ -12,7 +19,11 @@ interface HomeViewProps {
   userName: string;
 }
 
-const HomeView: React.FC<HomeViewProps> = ({ tasks, courses = [], userName }) => {
+const HomeView: React.FC<HomeViewProps> = ({
+  tasks,
+  courses = [],
+  userName,
+}) => {
   // Greeting Logic
   const greeting = useMemo(() => {
     const hours = new Date().getHours();
@@ -22,15 +33,22 @@ const HomeView: React.FC<HomeViewProps> = ({ tasks, courses = [], userName }) =>
     return "Good Evening";
   }, []);
 
-  // Stats Logic
-  const today = new Date().toDateString();
-  const todaysTasks = tasks.filter(
-    (t) => new Date(t.date).toDateString() === today,
-  );
-  const totalToday = todaysTasks.length;
-  const completedToday = todaysTasks.filter((t) => t.completed).length;
+  // Stats Logic - Calculate from ALL tasks, not just today
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((t) => t.completed).length;
+  const remainingTasks = totalTasks - completedTasks;
   const progress =
-    totalToday === 0 ? 0 : Math.round((completedToday / totalToday) * 100);
+    totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+
+  // Today's tasks for other sections
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const todaysTasks = tasks.filter((t) => {
+    const taskDate = new Date(t.date);
+    taskDate.setHours(0, 0, 0, 0);
+    return taskDate.getTime() === today.getTime();
+  });
 
   const toMinutes = (time?: string) => {
     if (!time) return 24 * 60 + 1;
@@ -53,7 +71,10 @@ const HomeView: React.FC<HomeViewProps> = ({ tasks, courses = [], userName }) =>
     subDays(new Date(), 6 - i),
   );
   const weeklyStats = weekDays.map((day) => {
-    const dayTasks = tasks.filter((t) => isSameDay(new Date(t.date), day));
+    const dayTasks = tasks.filter((t) => {
+      const taskDate = new Date(t.date);
+      return isSameDay(taskDate, day);
+    });
     const completed = dayTasks.filter((t) => t.completed).length;
     return {
       label: format(day, "EEE"),
@@ -75,6 +96,14 @@ const HomeView: React.FC<HomeViewProps> = ({ tasks, courses = [], userName }) =>
       };
       return priorityWeight[b.priority] - priorityWeight[a.priority];
     })[0];
+
+  // Tomorrow's schedule logic
+  const tomorrow = addDays(new Date(), 1);
+  const tomorrowDayName = format(tomorrow, "EEEE") as any;
+  const tomorrowCourses = courses
+    .filter((c) => c.day === tomorrowDayName)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const isTomorrowSunday = tomorrowDayName === "Sunday";
 
   return (
     <div className="space-y-10 pt-4">
@@ -113,7 +142,7 @@ const HomeView: React.FC<HomeViewProps> = ({ tasks, courses = [], userName }) =>
             </div>
             <div>
               <span className="text-2xl md:text-3xl font-bold text-white">
-                {totalToday - completedToday}
+                {remainingTasks}
               </span>
               <p className="text-xs text-slate-400">Tasks Remaining</p>
             </div>
@@ -135,9 +164,10 @@ const HomeView: React.FC<HomeViewProps> = ({ tasks, courses = [], userName }) =>
                 className="text-slate-700"
               />
               <motion.circle
+                key={`progress-${progress}`}
                 initial={{ strokeDashoffset: 226 }}
                 animate={{ strokeDashoffset: 226 - (226 * progress) / 100 }}
-                transition={{ duration: 1.5, ease: "easeOut" }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
                 cx="48"
                 cy="48"
                 r="36"
@@ -164,39 +194,101 @@ const HomeView: React.FC<HomeViewProps> = ({ tasks, courses = [], userName }) =>
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="space-y-4 h-full flex flex-col"
+            className="space-y-4"
           >
-             {/* Today's Schedule */}
-             <div className="bg-slate-900/60 border border-white/5 rounded-3xl p-5 backdrop-blur-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-white">Class Schedule</h2>
-                  <span className="text-xs text-slate-500">Today</span>
-                </div>
-                <div className="space-y-3">
-                  {courses
-                    .filter(c => c.day === format(new Date(), 'EEEE') as any)
-                    .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                    .map(course => (
-                      <div key={course.id} className="flex items-center space-x-3 bg-slate-800/40 p-3 rounded-2xl border border-white/5">
-                        <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400 font-bold text-xs flex-shrink-0">
-                          {course.startTime.split(':')[0]}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-medium text-slate-200 truncate">{course.name}</h4>
-                          <div className="flex items-center text-xs text-slate-500 mt-0.5 space-x-2">
-                             <span className="flex items-center"><MapPin size={10} className="mr-1" /> {course.room}</span>
-                             <span className="flex items-center"><User size={10} className="mr-1" /> {course.lecturer}</span>
-                          </div>
+            {/* Today's Schedule */}
+            <div className="bg-slate-900/60 border border-white/5 rounded-3xl p-5 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-white">
+                  Class Schedule
+                </h2>
+                <span className="text-xs text-slate-500">Today</span>
+              </div>
+              <div className="space-y-3">
+                {courses
+                  .filter((c) => c.day === (format(new Date(), "EEEE") as any))
+                  .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                  .map((course) => (
+                    <div
+                      key={course.id}
+                      className="flex items-center space-x-3 bg-slate-800/40 p-3 rounded-2xl border border-white/5"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400 font-bold text-xs flex-shrink-0">
+                        {course.startTime.split(":")[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-slate-200 truncate">
+                          {course.name}
+                        </h4>
+                        <div className="flex items-center text-xs text-slate-500 mt-0.5 space-x-2">
+                          <span className="flex items-center">
+                            <MapPin size={10} className="mr-1" /> {course.room}
+                          </span>
+                          <span className="flex items-center">
+                            <Clock size={10} className="mr-1" />{" "}
+                            {course.startTime} - {course.endTime}
+                          </span>
                         </div>
                       </div>
+                    </div>
                   ))}
-                  {courses.filter(c => c.day === format(new Date(), 'EEEE') as any).length === 0 && (
-                     <div className="text-center py-4 text-slate-500 text-sm">
-                        No classes today. Enjoy! 🎉
-                     </div>
-                  )}
-                </div>
-             </div>
+                {courses.filter(
+                  (c) => c.day === (format(new Date(), "EEEE") as any),
+                ).length === 0 && (
+                  <div className="text-center py-4 text-slate-500 text-sm">
+                    No classes today. Enjoy! 🎉
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Tomorrow's Schedule */}
+            <div className="bg-slate-900/60 border border-white/5 rounded-3xl p-5 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-white">
+                  Tomorrow&apos;s Schedule
+                </h2>
+                <span className="text-xs text-slate-500">
+                  {format(tomorrow, "EEE, MMM dd")}
+                </span>
+              </div>
+              <div className="space-y-3">
+                {tomorrowCourses.length > 0 ? (
+                  tomorrowCourses.map((course) => (
+                    <div
+                      key={course.id}
+                      className="flex items-center space-x-3 bg-slate-800/40 p-3 rounded-2xl border border-white/5"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-fuchsia-500/10 flex items-center justify-center text-fuchsia-400 font-bold text-xs flex-shrink-0">
+                        {course.startTime.split(":")[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-slate-200 truncate">
+                          {course.name}
+                        </h4>
+                        <div className="flex items-center text-xs text-slate-500 mt-0.5 space-x-2">
+                          <span className="flex items-center">
+                            <MapPin size={10} className="mr-1" /> {course.room}
+                          </span>
+                          <span className="flex items-center">
+                            <Clock size={10} className="mr-1" />{" "}
+                            {course.startTime} - {course.endTime}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-slate-500 text-sm">
+                    {isTomorrowSunday ? (
+                      <span>Libur! Time to rest 😴</span>
+                    ) : (
+                      <span>Free day! No classes scheduled 🎉</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
 
             <div className="flex items-center space-x-2">
               <Flame
@@ -209,7 +301,7 @@ const HomeView: React.FC<HomeViewProps> = ({ tasks, courses = [], userName }) =>
             </div>
 
             {focusTask ? (
-              <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-violet-500/20 p-6 md:p-8 rounded-3xl shadow-lg relative group h-[calc(100%-2.5rem)] flex flex-col justify-center">
+              <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-violet-500/20 p-6 md:p-8 rounded-3xl shadow-lg relative group">
                 <div className="absolute top-6 right-6 w-3 h-3 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
                 <div className="mb-4">
                   <span
@@ -239,7 +331,7 @@ const HomeView: React.FC<HomeViewProps> = ({ tasks, courses = [], userName }) =>
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-900/30 border border-dashed border-slate-700 p-6 rounded-3xl text-center text-slate-400 h-[calc(100%-2.5rem)] flex flex-col items-center justify-center">
+              <div className="bg-slate-900/30 border border-dashed border-slate-700 p-6 rounded-3xl text-center text-slate-400 flex flex-col items-center justify-center">
                 <p>No high priority tasks left. You&apos;re on fire! 🔥</p>
               </div>
             )}
@@ -316,12 +408,12 @@ const HomeView: React.FC<HomeViewProps> = ({ tasks, courses = [], userName }) =>
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
                 Momentum
               </span>
-              <span className="text-xs text-slate-500">Today</span>
+              <span className="text-xs text-slate-500">Overall</span>
             </div>
             <div className="flex items-end justify-between">
               <div>
                 <p className="text-3xl font-bold text-white">
-                  {completedToday}
+                  {completedTasks}
                 </p>
                 <p className="text-xs text-slate-500">Tasks completed</p>
               </div>
@@ -334,7 +426,7 @@ const HomeView: React.FC<HomeViewProps> = ({ tasks, courses = [], userName }) =>
             </div>
             <div className="mt-4 h-2 bg-slate-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500 ease-out"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -346,24 +438,24 @@ const HomeView: React.FC<HomeViewProps> = ({ tasks, courses = [], userName }) =>
               <span className="text-xs text-slate-500">Last 7 days</span>
             </div>
             <div className="mt-4 grid grid-cols-7 gap-2 items-end h-28">
-              {weeklyStats.map((stat) => (
+              {weeklyStats.map((stat, idx) => (
                 <div
-                  key={stat.label}
+                  key={`${stat.label}-${idx}`}
                   className="flex flex-col items-center space-y-2"
                 >
                   <div className="w-full h-20 flex items-end">
                     <div
-                      className="w-full rounded-full bg-slate-800 overflow-hidden"
+                      className="w-full rounded-full bg-slate-800 overflow-hidden transition-all duration-300"
                       style={{
                         height: `${Math.max(12, (stat.total / maxWeekly) * 80)}%`,
                       }}
                     >
                       <div
-                        className="w-full bg-gradient-to-t from-violet-500 to-fuchsia-500"
+                        className="w-full bg-gradient-to-t from-violet-500 to-fuchsia-500 transition-all duration-500"
                         style={{
                           height: `${stat.total === 0 ? 0 : (stat.completed / stat.total) * 100}%`,
                         }}
-                        title={`${stat.completed}/${stat.total}`}
+                        title={`${stat.completed}/${stat.total} completed`}
                       />
                     </div>
                   </div>

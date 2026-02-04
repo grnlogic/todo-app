@@ -100,7 +100,7 @@ const Layout: React.FC<LayoutProps> = ({
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto pb-0 md:pb-0 px-6 pt-6 md:p-10 z-10 scroll-smooth relative mobile-content-safe">
+        <main className="flex-1 overflow-y-auto pb-20 md:pb-0 px-6 pt-6 md:p-10 z-10 scroll-smooth relative mobile-content-safe">
           <div className="md:hidden mb-6">
             <div className="flex items-center justify-between">
               <div>
@@ -135,50 +135,48 @@ const Layout: React.FC<LayoutProps> = ({
         </main>
 
         {/* Bottom Navigation (Mobile Only) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-xl border-t border-white/5 z-50 rounded-t-3xl mobile-nav-safe">
-          <div className="flex justify-between items-center px-6 h-20 relative">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-white/10 z-50 shadow-2xl shadow-black/30 mobile-nav-safe">
+          <div className="grid grid-cols-6 items-center h-[70px] px-2">
             <NavButton
               active={activeTab === "home"}
               onClick={() => setActiveTab("home")}
-              icon={<Home size={24} />}
+              icon={<Home size={22} />}
               label="Home"
             />
 
             <NavButton
               active={activeTab === "tasks"}
               onClick={() => setActiveTab("tasks")}
-              icon={<CheckSquare size={24} />}
+              icon={<CheckSquare size={22} />}
               label="Tasks"
             />
 
             <NavButton
               active={activeTab === "schedule"}
               onClick={() => setActiveTab("schedule")}
-              icon={<BookOpen size={24} />}
+              icon={<BookOpen size={22} />}
               label="Jadwal"
             />
-
-            {/* Floating Add Button (Mobile) */}
-            <div className="relative -top-8">
-              <button
-                onClick={onAddClick}
-                className="w-16 h-16 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-full flex items-center justify-center shadow-lg shadow-violet-500/40 transform transition-transform active:scale-95 hover:scale-105 text-white"
-              >
-                <Plus size={32} strokeWidth={2.5} />
-              </button>
-            </div>
 
             <NavButton
               active={activeTab === "calendar"}
               onClick={() => setActiveTab("calendar")}
-              icon={<Calendar size={24} />}
+              icon={<Calendar size={22} />}
               label="Calendar"
+            />
+
+            <NavButton
+              active={false}
+              onClick={onAddClick}
+              icon={<Plus size={22} />}
+              label="Add"
+              isSpecial={true}
             />
 
             <NavButton
               active={activeTab === "settings"}
               onClick={() => setActiveTab("settings")}
-              icon={<Settings size={24} />}
+              icon={<Settings size={22} />}
               label="Settings"
             />
           </div>
@@ -193,6 +191,7 @@ interface NavButtonProps {
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
+  isSpecial?: boolean;
 }
 
 const NavButton: React.FC<NavButtonProps> = ({
@@ -200,21 +199,36 @@ const NavButton: React.FC<NavButtonProps> = ({
   onClick,
   icon,
   label,
+  isSpecial = false,
 }) => {
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center justify-center space-y-1 w-12 transition-colors duration-300 ${active ? "text-violet-400" : "text-slate-400 hover:text-slate-200"}`}
+      className={`flex flex-col items-center justify-center space-y-0.5 py-2 transition-all duration-300 ${
+        isSpecial
+          ? "text-violet-400 hover:text-violet-300"
+          : active
+            ? "text-violet-400"
+            : "text-slate-400 hover:text-slate-200"
+      }`}
     >
-      <div className="relative">
+      <div
+        className={`relative p-1 rounded-lg transition-all ${isSpecial ? "bg-violet-500/15" : ""}`}
+      >
         {icon}
-        {active && (
+        {active && !isSpecial && (
           <motion.div
-            layoutId="active-dot-mobile"
-            className="absolute -bottom-2 left-1/2 w-1 h-1 bg-violet-400 rounded-full transform -translate-x-1/2"
+            layoutId="active-indicator-mobile"
+            className="absolute -bottom-1 left-1/2 w-5 h-0.5 bg-violet-400 rounded-full transform -translate-x-1/2"
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
           />
         )}
       </div>
+      <span
+        className={`text-[10px] font-medium ${isSpecial ? "text-violet-400" : ""}`}
+      >
+        {label}
+      </span>
     </button>
   );
 };
