@@ -244,9 +244,16 @@ Kalau notifikasi jalan di komputer tapi **gagal di Android** (browser atau saat 
    Di Android, coba: Chrome → Settings → Site settings → [situs kamu] → Clear & reset, lalu buka lagi dan izinkan notifikasi.
 
 7. **Reminder terjadwal**  
-   Reminder (1 Hour Before, 1 Day Before, Custom) disimpan di DB dan dikirim oleh **cron** yang memanggil `/api/notifications/dispatch`:
-   - **Production (Vercel):** `vercel.json` sudah mengatur cron tiap menit. Di Vercel project settings, set env **CRON_SECRET** (min 16 karakter) agar request cron ter-authorize.
-   - **Development (`npm run dev`):** Aplikasi memanggil dispatch tiap 1 menit dari client agar reminder tetap jalan saat testing.
+   Reminder disimpan di DB dan dikirim oleh endpoint `/api/notifications/dispatch`:
+   - **Vercel Hobby:** Cron hanya boleh **sekali per hari**. Di `vercel.json` dipakai jadwal `0 8 * * *` (sekali sehari ~08:00 UTC). Reminder yang jatuh tempo akan dikirim saat cron jalan (jadi bisa telat sampai 24 jam). Supaya reminder lebih tepat waktu, pakai **cron eksternal** (lihat bawah).
+   - **Vercel Pro:** Bisa ganti di `vercel.json` ke `* * * * *` (tiap menit). Set env **CRON_SECRET** (min 16 karakter) di project settings.
+   - **Cron eksternal (gratis, untuk Hobby):** Agar reminder tiap menit/beberapa menit jalan tanpa upgrade Pro:
+     1. Buat akun di [cron-job.org](https://cron-job.org) (gratis).
+     2. Buat job baru: URL `https://<domain-kamu>.vercel.app/api/notifications/dispatch`, method **GET**, jadwal tiap 1–5 menit.
+     3. Di Vercel set env **CRON_SECRET** (string rahasia, min 16 karakter).
+     4. Di cron-job.org tambah header: **Authorization** = `Bearer <CRON_SECRET yang sama>`.
+     Setelah itu dispatch dipanggil oleh cron-job.org, reminder terkirim tepat waktu.
+   - **Development (`npm run dev`):** Aplikasi memanggil dispatch tiap 1 menit dari client agar reminder jalan saat testing.
 
 ---
 
