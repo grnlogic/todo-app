@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { jsonWithCors, optionsWithCors } from "@/lib/cors";
 
 // Schedule a notification for a task
 export async function POST(request: NextRequest) {
@@ -16,9 +17,9 @@ export async function POST(request: NextRequest) {
     } = await request.json();
     
     if (!taskId || !title || !scheduleTime) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
+      return jsonWithCors(
+        { error: "Missing required fields" },
+        { status: 400 },
       );
     }
 
@@ -26,18 +27,22 @@ export async function POST(request: NextRequest) {
     const now = new Date();
     
     if (scheduledDate <= now) {
-      return NextResponse.json(
-        { error: 'Schedule time must be in the future' },
-        { status: 400 }
+      return jsonWithCors(
+        { error: "Schedule time must be in the future" },
+        { status: 400 },
       );
     }
 
-    const resolvedToken = token
+    const isValidToken =
+      typeof token === "string" &&
+      token.length > 50 &&
+      token !== "permission-granted";
+    const resolvedToken = isValidToken
       ? token
       : await prismaAny.fcmToken
           .findFirst({
             where: { userId },
-            orderBy: { lastSeenAt: 'desc' },
+            orderBy: { lastSeenAt: "desc" },
           })
           .then((t: { token?: string | null } | null) => t?.token ?? null);
 
@@ -54,18 +59,18 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    return jsonWithCors({
       success: true,
-      message: 'Notification scheduled',
+      message: "Notification scheduled",
       scheduledFor: scheduledDate.toISOString(),
       id: schedule.id,
       hasToken: Boolean(resolvedToken),
     });
   } catch (error) {
-    console.error('Error scheduling notification:', error);
-    return NextResponse.json(
-      { error: 'Failed to schedule notification' },
-      { status: 500 }
+    console.error("Error scheduling notification:", error);
+    return jsonWithCors(
+      { error: "Failed to schedule notification" },
+      { status: 500 },
     );
   }
 }
@@ -75,8 +80,8 @@ export async function GET(request: NextRequest) {
   try {
     const prismaAny = prisma as any;
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId') || 'default-user';
-    const status = searchParams.get('status');
+    const userId = searchParams.get("userId") || "default-user";
+    const status = searchParams.get("status");
 
     const notifications = await prismaAny.notificationSchedule.findMany({
       where: {
@@ -87,14 +92,19 @@ export async function GET(request: NextRequest) {
       take: 50,
     });
 
-    return NextResponse.json({
+    return jsonWithCors({
       success: true,
       notifications,
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to fetch notifications' },
-      { status: 500 }
+    return jsonWithCors(
+      { error: "Failed to fetch notifications" },
+      { status: 500 },
     );
   }
 }
+
+export function OPTIONS() {
+  return optionsWithCors();
+}
+

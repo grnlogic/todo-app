@@ -8,6 +8,7 @@ import CalendarView from "@/components/CalendarView";
 import SettingsView from "@/components/SettingsView";
 import ScheduleView from "@/components/ScheduleView";
 import AddTaskModal from "@/components/AddTaskModal";
+import Toast, { ToastState } from "@/components/Toast";
 import { Task, Priority, Tab, Course } from "@/types";
 import { AnimatePresence } from "framer-motion";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -18,9 +19,12 @@ const API_BASE = "";
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
+  const [togglingTaskId, setTogglingTaskId] = useState<string | null>(null);
   const { requestPermission } = useNotifications();
 
   const normalizeTask = (task: Task & { date: string | Date }): Task => ({
@@ -47,16 +51,36 @@ export default function Home() {
     loadTasks();
   }, []);
 
-  const handleAddTask = async (newTask: {
-    title: string;
-    date: Date;
-    priority: Priority;
-    time: string;
-    reminder?: {
-      amount: number;
-      unit: "minutes" | "hours" | "days";
-    };
-  }) => {
+  // In dev, poll dispatch every minute so scheduled reminders get sent (production uses Vercel Cron)
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    const t = setInterval(() => {
+      fetch(`${API_BASE}/api/notifications/dispatch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }).catch(() => {});
+    }, 60 * 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const handleAddTask = async (
+    newTask: {
+      title: string;
+      date: Date;
+      priority: Priority;
+      time: string;
+      reminder?: {
+        amount: number;
+        unit: "minutes" | "hours" | "days";
+      };
+    },
+    existingId?: string
+  ) => {
+    if (existingId) {
+      await handleUpdateTask(existingId, newTask);
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/api/tasks`, {
         method: "POST",
@@ -80,7 +104,7 @@ export default function Home() {
         const token = await requestPermission();
         if (!token) {
           setError(
-            "Notification permission not granted. Reminder not scheduled.",
+            "Notification permission not granted. Reminder not scheduled."
           );
           setIsAddModalOpen(false);
           return;
@@ -93,28 +117,48 @@ export default function Home() {
           newTask.reminder.unit === "minutes"
             ? newTask.reminder.amount * 60 * 1000
             : newTask.reminder.unit === "hours"
-              ? newTask.reminder.amount * 60 * 60 * 1000
-              : newTask.reminder.amount * 24 * 60 * 60 * 1000;
+            ? newTask.reminder.amount * 60 * 60 * 1000
+            : newTask.reminder.amount * 24 * 60 * 60 * 1000;
 
         const reminderTime = new Date(scheduledAt.getTime() - offsetMs);
         if (reminderTime.getTime() <= Date.now()) {
           setError("Reminder time must be in the future.");
         } else {
-          await fetch(`${API_BASE}/api/notifications/schedule`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              taskId: created.id,
-              title: created.title,
-              scheduleTime: reminderTime.toISOString(),
-              userId: "default-user",
-              token: token || undefined,
-              data: {
+          const validToken =
+            token && token !== "permission-granted" && token.length > 50
+              ? token
+              : undefined;
+          const scheduleRes = await fetch(
+            `${API_BASE}/api/notifications/schedule`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
                 taskId: created.id,
-                url: "/",
-              },
-            }),
-          });
+                title: created.title,
+                body: `Don't forget: ${created.title}`,
+                scheduleTime: reminderTime.toISOString(),
+                userId: "default-user",
+                token: validToken,
+                data: {
+                  taskId: created.id,
+                  url: "/",
+                },
+              }),
+            }
+          );
+          if (!scheduleRes.ok) {
+            const err = await scheduleRes.json().catch(() => ({}));
+            setToast({
+              message: err?.error || "Reminder could not be scheduled",
+              type: "error",
+            });
+          } else {
+            setToast({
+              message: `Reminder set for ${newTask.reminder.amount} ${newTask.reminder.unit} before`,
+              type: "success",
+            });
+          }
         }
       }
       setIsAddModalOpen(false);
@@ -127,6 +171,7 @@ export default function Home() {
   const handleToggleTask = async (id: string) => {
     const target = tasks.find((t) => t.id === id);
     if (!target) return;
+    setTogglingTaskId(id);
     try {
       const res = await fetch(`${API_BASE}/api/tasks/${id}`, {
         method: "PATCH",
@@ -136,10 +181,17 @@ export default function Home() {
       if (!res.ok) throw new Error("Failed to update task");
       const updated = await res.json();
       setTasks((prev) =>
-        prev.map((t) => (t.id === id ? normalizeTask(updated) : t)),
+        prev.map((t) => (t.id === id ? normalizeTask(updated) : t))
       );
+      setToast({
+        message: target.completed ? "Task unchecked" : "Task completed",
+        type: "success",
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update task");
+      setToast({ message: "Failed to update task", type: "error" });
+    } finally {
+      setTogglingTaskId(null);
     }
   };
 
@@ -150,8 +202,44 @@ export default function Home() {
       });
       if (!res.ok) throw new Error("Failed to delete task");
       setTasks((prev) => prev.filter((t) => t.id !== id));
+      setToast({ message: "Task deleted", type: "success" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete task");
+      setToast({ message: "Failed to delete task", type: "error" });
+    }
+  };
+
+  const handleUpdateTask = async (
+    existingId: string,
+    data: {
+      title: string;
+      date: Date;
+      priority: Priority;
+      time: string;
+    }
+  ) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/tasks/${existingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: data.title,
+          date: data.date.toISOString(),
+          time: data.time,
+          priority: data.priority,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to update task");
+      const updated = await res.json();
+      setTasks((prev) =>
+        prev.map((t) => (t.id === existingId ? normalizeTask(updated) : t))
+      );
+      setEditingTask(null);
+      setIsAddModalOpen(false);
+      setToast({ message: "Task updated", type: "success" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update task");
+      setToast({ message: "Failed to update task", type: "error" });
     }
   };
 
@@ -220,7 +308,7 @@ export default function Home() {
 
       // 2 hours before
       const notificationTime = new Date(
-        nextClass.getTime() - 2 * 60 * 60 * 1000,
+        nextClass.getTime() - 2 * 60 * 60 * 1000
       );
 
       // If notification time is in the past (e.g. class is in 1 hour), don't schedule or schedule for next week?
@@ -252,7 +340,9 @@ export default function Home() {
         }),
       });
       console.log(
-        `Scheduled notification for ${course.name} at ${notificationTime.toLocaleString()}`,
+        `Scheduled notification for ${
+          course.name
+        } at ${notificationTime.toLocaleString()}`
       );
     } catch (error) {
       console.error("Failed to schedule course notification", error);
@@ -297,6 +387,11 @@ export default function Home() {
             tasks={tasks}
             onToggleTask={handleToggleTask}
             onDeleteTask={handleDeleteTask}
+            onEditTask={(task) => {
+              setEditingTask(task);
+              setIsAddModalOpen(true);
+            }}
+            togglingTaskId={togglingTaskId}
           />
         );
       case "schedule":
@@ -339,11 +434,17 @@ export default function Home() {
         {isAddModalOpen && (
           <AddTaskModal
             isOpen={isAddModalOpen}
-            onClose={() => setIsAddModalOpen(false)}
+            onClose={() => {
+              setIsAddModalOpen(false);
+              setEditingTask(null);
+            }}
+            initialTask={editingTask}
             onSave={handleAddTask}
           />
         )}
       </AnimatePresence>
+
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
     </>
   );
 }

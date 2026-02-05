@@ -33,11 +33,11 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks }) => {
   const startDay = getDay(startOfMonth(currentMonth));
   const emptyDays = Array(startDay).fill(null);
 
-  const selectedTasks = tasks.filter((t) =>
-    isSameDay(new Date(t.date), selectedDate),
+  const selectedTasks = tasks.filter(
+    (t) => isSameDay(new Date(t.date), selectedDate) && !t.completed
   );
   const monthlyTasks = tasks.filter((t) =>
-    isSameMonth(new Date(t.date), currentMonth),
+    isSameMonth(new Date(t.date), currentMonth)
   );
   const monthlyCompleted = monthlyTasks.filter((t) => t.completed).length;
 
@@ -130,7 +130,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks }) => {
 
               {daysInMonth.map((day) => {
                 const dayTasks = tasks.filter((t) =>
-                  isSameDay(new Date(t.date), day),
+                  isSameDay(new Date(t.date), day)
                 );
                 const isSelected = isSameDay(day, selectedDate);
                 const isToday = isSameDay(day, new Date());
@@ -147,8 +147,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks }) => {
                               isSelected
                                 ? "bg-violet-500 text-white shadow-lg shadow-violet-500/30 scale-110"
                                 : isToday
-                                  ? "bg-white/10 text-white"
-                                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                                ? "bg-white/10 text-white"
+                                : "text-slate-400 hover:text-white hover:bg-white/5"
                             }`}
                     >
                       {format(day, "d")}
@@ -202,11 +202,17 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks }) => {
                       className="flex items-start space-x-3 text-sm p-4 bg-slate-950/50 rounded-2xl border border-white/5 group hover:border-violet-400/30 transition-colors"
                     >
                       <div
-                        className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${task.completed ? "bg-slate-600" : "bg-violet-400"}`}
+                        className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${
+                          task.completed ? "bg-slate-600" : "bg-violet-400"
+                        }`}
                       />
                       <div className="flex-1 min-w-0">
                         <span
-                          className={`block font-medium break-words ${task.completed ? "text-slate-500 line-through" : "text-slate-200"}`}
+                          className={`block font-medium break-words ${
+                            task.completed
+                              ? "text-slate-500 line-through"
+                              : "text-slate-200"
+                          }`}
                         >
                           {task.title}
                         </span>

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
+import { addCorsHeaders, optionsWithCors } from "@/lib/cors";
 
 export async function GET() {
   try {
@@ -21,15 +20,22 @@ export async function GET() {
     const randomQuote =
       quotes.length > 0 ? quotes[Math.floor(Math.random() * quotes.length)] : null;
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       mood: dailyMood,
       quote: randomQuote,
     });
+    return addCorsHeaders(res);
   } catch (error) {
     console.error("Error fetching daily boost:", error);
-    return NextResponse.json(
+    const res = NextResponse.json(
       { error: "Failed to fetch daily boost data" },
-      { status: 500 }
+      { status: 500 },
     );
+    return addCorsHeaders(res);
   }
 }
+
+export function OPTIONS() {
+  return optionsWithCors();
+}
+

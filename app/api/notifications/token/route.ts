@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { jsonWithCors, optionsWithCors } from "@/lib/cors";
 
 // Save FCM token for a user
 export async function POST(request: NextRequest) {
@@ -7,9 +8,9 @@ export async function POST(request: NextRequest) {
     const { token, userId = 'default-user', deviceName } = await request.json();
     
     if (!token) {
-      return NextResponse.json(
-        { error: 'Token is required' },
-        { status: 400 }
+      return jsonWithCors(
+        { error: "Token is required" },
+        { status: 400 },
       );
     }
 
@@ -33,15 +34,20 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
+    return jsonWithCors({
       success: true,
-      message: 'Token saved successfully'
+      message: "Token saved successfully",
     });
   } catch (error) {
-    console.error('Error saving FCM token:', error);
-    return NextResponse.json(
-      { error: 'Failed to save token' },
-      { status: 500 }
+    console.error("Error saving FCM token:", error);
+    return jsonWithCors(
+      { error: "Failed to save token" },
+      { status: 500 },
     );
   }
 }
+
+export function OPTIONS() {
+  return optionsWithCors();
+}
+

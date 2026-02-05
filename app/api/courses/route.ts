@@ -1,18 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { randomUUID } from 'crypto';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
+import { prisma } from "@/lib/prisma";
+import { jsonWithCors, optionsWithCors } from "@/lib/cors";
 
 export async function GET() {
   try {
     const courses = await prisma.course.findMany({
-      orderBy: [{ day: 'asc' }, { startTime: 'asc' }],
+      orderBy: [{ day: "asc" }, { startTime: "asc" }],
     });
-    return NextResponse.json(courses);
+    return jsonWithCors(courses);
   } catch (error) {
-    console.error('GET /api/courses - Error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch courses' },
-      { status: 500 }
+    console.error("GET /api/courses - Error:", error);
+    return jsonWithCors(
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to fetch courses",
+      },
+      { status: 500 },
     );
   }
 }
@@ -23,9 +27,9 @@ export async function POST(request: NextRequest) {
     const { name, lecturer, room, day, startTime, endTime, userId } = body;
 
     if (!name || !lecturer || !room || !day || !startTime || !endTime) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
+      return jsonWithCors(
+        { error: "Missing required fields" },
+        { status: 400 },
       );
     }
 
@@ -38,16 +42,24 @@ export async function POST(request: NextRequest) {
         day,
         startTime,
         endTime,
-        userId: userId || 'default-user',
+        userId: userId || "default-user",
       },
     });
 
-    return NextResponse.json(course, { status: 201 });
+    return jsonWithCors(course, { status: 201 });
   } catch (error) {
-    console.error('POST /api/courses - Error:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create course' },
-      { status: 400 }
+    console.error("POST /api/courses - Error:", error);
+    return jsonWithCors(
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to create course",
+      },
+      { status: 400 },
     );
   }
 }
+
+export function OPTIONS() {
+  return optionsWithCors();
+}
+

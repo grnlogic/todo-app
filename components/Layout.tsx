@@ -9,6 +9,7 @@ import {
   Plus,
   Sparkles,
   BookOpen,
+  WifiOff,
 } from "lucide-react";
 import { Tab } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,9 +28,19 @@ const Layout: React.FC<LayoutProps> = ({
   onAddClick,
 }) => {
   const [mounted, setMounted] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
     setMounted(true);
+    setIsOnline(typeof navigator !== "undefined" ? navigator.onLine : true);
+    const onOnline = () => setIsOnline(true);
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
   }, []);
 
   return (
@@ -98,6 +109,17 @@ const Layout: React.FC<LayoutProps> = ({
             </button>
           </div>
         </aside>
+
+        {/* Offline banner */}
+        {mounted && !isOnline && (
+          <div className="absolute top-0 left-0 right-0 z-30 bg-amber-500/90 text-slate-900 px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2">
+            <WifiOff size={16} />
+            <span>
+              Offline – menampilkan data yang di-cache. Perubahan akan sync saat
+              online.
+            </span>
+          </div>
+        )}
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto pb-20 md:pb-0 px-6 pt-6 md:p-10 z-10 scroll-smooth relative mobile-content-safe">
@@ -246,7 +268,9 @@ const DesktopNavItem: React.FC<{
         />
       )}
       <div
-        className={`relative z-10 ${active ? "text-violet-400" : "group-hover:text-slate-200"}`}
+        className={`relative z-10 ${
+          active ? "text-violet-400" : "group-hover:text-slate-200"
+        }`}
       >
         {icon}
       </div>

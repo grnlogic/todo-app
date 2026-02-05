@@ -2,7 +2,10 @@
 
 import React, { useState } from "react";
 import { Moon, User, Bell, Palette, RefreshCw, Send } from "lucide-react";
-import { requestNotificationPermission } from "@/lib/firebase";
+import {
+  requestNotificationPermission,
+  showNotification,
+} from "@/lib/firebase";
 
 interface SettingsViewProps {
   tasks?: any[];
@@ -79,14 +82,14 @@ const SettingsView: React.FC<SettingsViewProps> = ({ tasks = [] }) => {
 
       if (fcmSent) {
         setNotifStatus(
-          "✅ Test notification sent via FCM! Check system notifications.",
+          "✅ Test notification sent via FCM! Check system notifications."
         );
         return;
       }
 
-      // Fallback to immediate browser notification
+      // Fallback: show via ServiceWorker (new Notification() illegal when SW controls page)
       if ("Notification" in window && Notification.permission === "granted") {
-        new Notification("🎯 Task Reminder", {
+        await showNotification("🎯 Task Reminder", {
           body: `Don't forget: ${randomTask.title}`,
           tag: randomTask.id,
           requireInteraction: false,
@@ -99,14 +102,15 @@ const SettingsView: React.FC<SettingsViewProps> = ({ tasks = [] }) => {
         setNotifStatus(
           token !== "permission-granted"
             ? "✅ Local notification sent (FCM send failed)."
-            : "✅ Test notification sent! (Basic mode - scheduled reminders need FCM setup)",
+            : "✅ Test notification sent! (Basic mode - scheduled reminders need FCM setup)"
         );
       } else {
         setNotifStatus("❌ Notification permission not granted");
       }
     } catch (error) {
       console.error("Test notification error:", error);
-      setNotifStatus("❌ Failed to send notification");
+      const msg = error instanceof Error ? error.message : String(error);
+      setNotifStatus(msg.startsWith("❌") ? msg : `❌ ${msg}`);
     } finally {
       setIsTestingNotif(false);
     }
@@ -170,7 +174,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ tasks = [] }) => {
                   style={{ backgroundColor: c }}
                   aria-label={`Select ${c}`}
                 />
-              ),
+              )
             )}
           </div>
         </div>
@@ -284,7 +288,9 @@ const SettingItem: React.FC<SettingItemProps> = ({
           />
           <label
             htmlFor={title}
-            className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer ${defaultChecked ? "bg-violet-500" : "bg-slate-700"}`}
+            className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer ${
+              defaultChecked ? "bg-violet-500" : "bg-slate-700"
+            }`}
           ></label>
         </div>
       ) : null}

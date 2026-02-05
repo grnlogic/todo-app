@@ -27,7 +27,13 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/Frieren.jpg" type="image/jpeg" />
         <link rel="apple-touch-icon" href="/Frieren.jpg" />
+        <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0f172a" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

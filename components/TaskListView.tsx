@@ -3,19 +3,23 @@
 import React, { useMemo, useState } from "react";
 import { Task, Priority } from "@/types";
 import { motion } from "framer-motion";
-import { Clock, Check, Trash2 } from "lucide-react";
+import { Clock, Check, Trash2, Pencil, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface TaskListViewProps {
   tasks: Task[];
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
+  onEditTask?: (task: Task) => void;
+  togglingTaskId?: string | null;
 }
 
 const TaskListView: React.FC<TaskListViewProps> = ({
   tasks,
   onToggleTask,
   onDeleteTask,
+  onEditTask,
+  togglingTaskId = null,
 }) => {
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
   const [query, setQuery] = useState("");
@@ -129,18 +133,21 @@ const TaskListView: React.FC<TaskListViewProps> = ({
             }`}
           >
             <div className="flex items-center space-x-4">
-              {/* Checkbox */}
+              {/* Checkbox with loading state */}
               <button
                 onClick={() => onToggleTask(task.id)}
-                className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
+                disabled={togglingTaskId === task.id}
+                className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 disabled:opacity-70 ${
                   task.completed
                     ? "bg-slate-700 border-slate-700"
                     : getCheckboxColor(task.priority)
                 }`}
               >
-                {task.completed && (
+                {togglingTaskId === task.id ? (
+                  <Loader2 size={14} className="text-white animate-spin" />
+                ) : task.completed ? (
                   <Check size={14} className="text-white" strokeWidth={3} />
-                )}
+                ) : null}
               </button>
 
               {/* Content */}
@@ -157,7 +164,9 @@ const TaskListView: React.FC<TaskListViewProps> = ({
                 <div className="flex items-center space-x-3 mt-1">
                   {!task.completed && (
                     <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${getPriorityColor(task.priority)}`}
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${getPriorityColor(
+                        task.priority
+                      )}`}
                     >
                       {task.priority}
                     </span>
@@ -172,13 +181,25 @@ const TaskListView: React.FC<TaskListViewProps> = ({
                 </div>
               </div>
 
-              {/* Delete Action (visible on hover or swipe concept) */}
-              <button
-                onClick={() => onDeleteTask(task.id)}
-                className="text-slate-600 hover:text-red-400 p-2 transition-colors opacity-0 group-hover:opacity-100"
-              >
-                <Trash2 size={18} />
-              </button>
+              {/* Edit & Delete (always visible on mobile, on hover on desktop) */}
+              <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                {onEditTask && (
+                  <button
+                    onClick={() => onEditTask(task)}
+                    className="text-slate-500 hover:text-violet-400 p-2 transition-colors"
+                    title="Edit"
+                  >
+                    <Pencil size={16} />
+                  </button>
+                )}
+                <button
+                  onClick={() => onDeleteTask(task.id)}
+                  className="text-slate-600 hover:text-red-400 p-2 transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
             </div>
           </motion.div>
         ))}

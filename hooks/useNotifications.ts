@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { requestNotificationPermission, onMessageListener } from '@/lib/firebase';
+import { requestNotificationPermission, onMessageListener, showNotification } from '@/lib/firebase';
 
 export interface NotificationPayload {
   notification?: {
@@ -17,6 +17,7 @@ export const useNotifications = () => {
   const [fcmToken, setFcmToken] = useState<string | null>(null);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [notification, setNotification] = useState<NotificationPayload | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check initial permission
@@ -30,12 +31,12 @@ export const useNotifications = () => {
       if (payload) {
         setNotification(payload as NotificationPayload);
         
-        // Show browser notification for foreground messages
+        // Show via SW (new Notification() is illegal when SW controls the page)
         if (Notification.permission === 'granted') {
           const notif = payload as NotificationPayload;
-          new Notification(notif.notification?.title || 'Task Reminder', {
+          showNotification(notif.notification?.title || 'Task Reminder', {
             body: notif.notification?.body || '',
-            icon: '/icon-192x192.png',
+            icon: '/icon.jpg',
           });
         }
       }
@@ -45,21 +46,23 @@ export const useNotifications = () => {
   }, []);
 
   const requestPermission = async () => {
+    setLastError(null);
     try {
       const token = await requestNotificationPermission();
       if (token) {
         setFcmToken(token);
         setPermission('granted');
-        
-        // Save token to backend
-        await saveTokenToBackend(token);
-        
+        if (token !== 'permission-granted') {
+          await saveTokenToBackend(token);
+        }
         return token;
       }
       return null;
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      setLastError(msg);
       console.error('Error requesting permission:', error);
-      return null;
+      throw error;
     }
   };
 
@@ -84,6 +87,8 @@ export const useNotifications = () => {
     fcmToken,
     permission,
     notification,
+    lastError,
+    clearError: () => setLastError(null),
     requestPermission,
   };
 };

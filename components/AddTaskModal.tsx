@@ -3,27 +3,32 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { X, Calendar, Clock, Flag, Bell } from "lucide-react";
-import { Priority } from "@/types";
+import { Priority, Task } from "@/types";
 import { format } from "date-fns";
 
 interface AddTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (task: {
-    title: string;
-    date: Date;
-    priority: Priority;
-    time: string;
-    reminder?: {
-      amount: number;
-      unit: "minutes" | "hours" | "days";
-    };
-  }) => void;
+  initialTask?: Task | null;
+  onSave: (
+    task: {
+      title: string;
+      date: Date;
+      priority: Priority;
+      time: string;
+      reminder?: {
+        amount: number;
+        unit: "minutes" | "hours" | "days";
+      };
+    },
+    existingId?: string
+  ) => void;
 }
 
 const AddTaskModal: React.FC<AddTaskModalProps> = ({
   isOpen,
   onClose,
+  initialTask,
   onSave,
 }) => {
   const [title, setTitle] = useState("");
@@ -40,6 +45,20 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
+    if (isOpen && initialTask) {
+      setTitle(initialTask.title);
+      setPriority(initialTask.priority);
+      setDate(new Date(initialTask.date));
+      setTime(initialTask.time || format(new Date(), "HH:mm"));
+    } else if (isOpen && !initialTask) {
+      setTitle("");
+      setPriority(Priority.MEDIUM);
+      setDate(new Date());
+      setTime(format(new Date(), "HH:mm"));
+    }
+  }, [isOpen, initialTask]);
+
+  useEffect(() => {
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 768);
     checkDesktop();
     window.addEventListener("resize", checkDesktop);
@@ -48,18 +67,21 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
 
   const handleSave = () => {
     if (!title.trim()) return;
-    onSave({
-      title,
-      date,
-      priority,
-      time,
-      reminder: reminderEnabled
-        ? {
-            amount: Math.max(1, Number(reminderAmount) || 0),
-            unit: reminderUnit,
-          }
-        : undefined,
-    });
+    onSave(
+      {
+        title,
+        date,
+        priority,
+        time,
+        reminder: reminderEnabled
+          ? {
+              amount: Math.max(1, Number(reminderAmount) || 0),
+              unit: reminderUnit,
+            }
+          : undefined,
+      },
+      initialTask?.id
+    );
     setTitle("");
     setReminderEnabled(false);
     setReminderAmount(60);
@@ -117,7 +139,9 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
         }
       >
         <div className="flex justify-between items-center mb-8">
-          <h3 className="text-2xl font-bold text-white">New Task</h3>
+          <h3 className="text-2xl font-bold text-white">
+            {initialTask ? "Edit Task" : "New Task"}
+          </h3>
           <button
             onClick={onClose}
             className="p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors"
@@ -200,8 +224,8 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
                       ? p === Priority.HIGH
                         ? "bg-red-500/20 text-red-400 border-red-500/50"
                         : p === Priority.MEDIUM
-                          ? "bg-amber-500/20 text-amber-400 border-amber-500/50"
-                          : "bg-emerald-500/20 text-emerald-400 border-emerald-500/50"
+                        ? "bg-amber-500/20 text-amber-400 border-amber-500/50"
+                        : "bg-emerald-500/20 text-emerald-400 border-emerald-500/50"
                       : "bg-slate-800 border-transparent text-slate-500 hover:bg-slate-700"
                   }`}
                 >
@@ -297,7 +321,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
                   value={reminderUnit}
                   onChange={(e) =>
                     setReminderUnit(
-                      e.target.value as "minutes" | "hours" | "days",
+                      e.target.value as "minutes" | "hours" | "days"
                     )
                   }
                   className="flex-1 bg-slate-950/50 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-violet-500"
@@ -316,7 +340,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
               onClick={handleSave}
               className="w-full py-4 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-2xl text-white font-bold text-lg shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transform transition-all active:scale-[0.98] hover:scale-[1.02]"
             >
-              Save Task
+              {initialTask ? "Update Task" : "Save Task"}
             </button>
             <p className="text-xs text-slate-500 text-center mt-3">
               Tip: set a time to stay consistent.

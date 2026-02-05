@@ -90,7 +90,7 @@ const HomeView: React.FC<HomeViewProps> = ({
     .slice(0, 5);
 
   const weekDays = Array.from({ length: 7 }, (_, i) =>
-    subDays(new Date(), 6 - i),
+    subDays(new Date(), 6 - i)
   );
   const weeklyStats = weekDays.map((day) => {
     const dayTasks = tasks.filter((t) => {
@@ -152,60 +152,125 @@ const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:items-stretch">
         {/* Left Column: Stats */}
-        <div className="md:col-span-5 grid grid-cols-2 gap-4">
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-slate-900/50 border border-white/5 p-4 rounded-3xl backdrop-blur-md flex flex-col justify-between h-32 md:h-40"
-          >
-            <div className="p-2 bg-indigo-500/20 w-fit rounded-xl text-indigo-400">
-              <CheckCircle2 size={20} />
-            </div>
-            <div>
-              <span className="text-2xl md:text-3xl font-bold text-white">
-                {remainingTasks}
-              </span>
-              <p className="text-xs text-slate-400">Tasks Remaining</p>
-            </div>
-          </motion.div>
+        <div className="md:col-span-5 flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="bg-slate-900/50 border border-white/5 p-4 rounded-3xl backdrop-blur-md flex flex-col justify-between h-32 md:h-40"
+            >
+              <div className="p-2 bg-indigo-500/20 w-fit rounded-xl text-indigo-400">
+                <CheckCircle2 size={20} />
+              </div>
+              <div>
+                <span className="text-2xl md:text-3xl font-bold text-white">
+                  {remainingTasks}
+                </span>
+                <p className="text-xs text-slate-400">Tasks Remaining</p>
+              </div>
+            </motion.div>
 
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className="bg-slate-900/50 border border-white/5 p-4 rounded-3xl backdrop-blur-md flex flex-col items-center justify-center relative overflow-hidden h-32 md:h-40"
+            >
+              {/* Circular Progress SVG */}
+              <svg className="w-24 h-24 transform -rotate-90">
+                <circle
+                  cx="48"
+                  cy="48"
+                  r="36"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  className="text-slate-700"
+                />
+                <motion.circle
+                  key={`progress-${progress}`}
+                  initial={{ strokeDashoffset: 226 }}
+                  animate={{ strokeDashoffset: 226 - (226 * progress) / 100 }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  cx="48"
+                  cy="48"
+                  r="36"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  strokeDasharray="226"
+                  strokeLinecap="round"
+                  className="text-fuchsia-400"
+                />
+              </svg>
+              <div className="absolute flex flex-col items-center">
+                <span className="text-lg font-bold text-white">
+                  {progress}%
+                </span>
+                <span className="text-[10px] text-slate-400 uppercase tracking-wider">
+                  Done
+                </span>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Daftar tugas selesai (semua hari) */}
           <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="bg-slate-900/50 border border-white/5 p-4 rounded-3xl backdrop-blur-md flex flex-col items-center justify-center relative overflow-hidden h-32 md:h-40"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="flex-1 min-h-[120px] md:min-h-0 bg-slate-900/50 border border-white/5 rounded-3xl p-4 md:p-5 backdrop-blur-md flex flex-col overflow-hidden"
           >
-            {/* Circular Progress SVG */}
-            <svg className="w-24 h-24 transform -rotate-90">
-              <circle
-                cx="48"
-                cy="48"
-                r="36"
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="transparent"
-                className="text-slate-700"
-              />
-              <motion.circle
-                key={`progress-${progress}`}
-                initial={{ strokeDashoffset: 226 }}
-                animate={{ strokeDashoffset: 226 - (226 * progress) / 100 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-                cx="48"
-                cy="48"
-                r="36"
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="transparent"
-                strokeDasharray="226"
-                strokeLinecap="round"
-                className="text-fuchsia-400"
-              />
-            </svg>
-            <div className="absolute flex flex-col items-center">
-              <span className="text-lg font-bold text-white">{progress}%</span>
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider">
-                Done
+            <div className="flex items-center justify-between shrink-0">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+                Tugas selesai
               </span>
+              <span className="text-[10px] text-slate-500">
+                {completedTasks} total
+              </span>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto mt-3 space-y-2 pr-1">
+              {tasks
+                .filter((t) => t.completed)
+                .sort((a, b) => {
+                  const dateA = new Date(a.date).getTime();
+                  const dateB = new Date(b.date).getTime();
+                  if (dateA !== dateB) return dateB - dateA;
+                  return toMinutes(b.time) - toMinutes(a.time);
+                })
+                .map((task) => {
+                  const taskDate = new Date(task.date);
+                  const dateLabel = isSameDay(taskDate, today)
+                    ? "Hari ini"
+                    : isSameDay(taskDate, subDays(today, 1))
+                    ? "Kemarin"
+                    : format(taskDate, "dd MMM");
+                  return (
+                    <div
+                      key={task.id}
+                      className="flex items-center gap-2 bg-slate-800/40 border border-white/5 rounded-xl px-3 py-2"
+                    >
+                      <CheckCircle2
+                        size={16}
+                        className="text-emerald-400 shrink-0"
+                        aria-hidden
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-slate-200 truncate">
+                          {task.title}
+                        </p>
+                        <p className="text-[10px] text-slate-500">
+                          {dateLabel}
+                          {task.time ? ` · ${task.time}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              {completedTasks === 0 && (
+                <p className="text-sm text-slate-500 py-2 text-center">
+                  Belum ada tugas selesai
+                </p>
+              )}
             </div>
           </motion.div>
         </div>
@@ -255,7 +320,7 @@ const HomeView: React.FC<HomeViewProps> = ({
                     </div>
                   ))}
                 {courses.filter(
-                  (c) => c.day === (format(new Date(), "EEEE") as any),
+                  (c) => c.day === (format(new Date(), "EEEE") as any)
                 ).length === 0 && (
                   <div className="text-center py-4 text-slate-500 text-sm">
                     No classes today. Enjoy! 🎉
@@ -331,8 +396,8 @@ const HomeView: React.FC<HomeViewProps> = ({
                       focusTask.priority === Priority.HIGH
                         ? "bg-red-500/10 text-red-400 border-red-500/20"
                         : focusTask.priority === Priority.MEDIUM
-                          ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                          : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                        ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                        : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                     }`}
                   >
                     {focusTask.priority} Priority
@@ -389,8 +454,8 @@ const HomeView: React.FC<HomeViewProps> = ({
                           task.priority === Priority.HIGH
                             ? "bg-red-400"
                             : task.priority === Priority.MEDIUM
-                              ? "bg-amber-400"
-                              : "bg-emerald-400"
+                            ? "bg-amber-400"
+                            : "bg-emerald-400"
                         }`}
                       />
                       <div className="flex-1 min-w-0">
@@ -407,8 +472,8 @@ const HomeView: React.FC<HomeViewProps> = ({
                         task.priority === Priority.HIGH
                           ? "text-red-400 border-red-500/30 bg-red-500/10"
                           : task.priority === Priority.MEDIUM
-                            ? "text-amber-400 border-amber-500/30 bg-amber-500/10"
-                            : "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
+                          ? "text-amber-400 border-amber-500/30 bg-amber-500/10"
+                          : "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
                       }`}
                     >
                       {task.priority}
@@ -469,13 +534,20 @@ const HomeView: React.FC<HomeViewProps> = ({
                     <div
                       className="w-full rounded-full bg-slate-800 overflow-hidden transition-all duration-300"
                       style={{
-                        height: `${Math.max(12, (stat.total / maxWeekly) * 80)}%`,
+                        height: `${Math.max(
+                          12,
+                          (stat.total / maxWeekly) * 80
+                        )}%`,
                       }}
                     >
                       <div
                         className="w-full bg-gradient-to-t from-violet-500 to-fuchsia-500 transition-all duration-500"
                         style={{
-                          height: `${stat.total === 0 ? 0 : (stat.completed / stat.total) * 100}%`,
+                          height: `${
+                            stat.total === 0
+                              ? 0
+                              : (stat.completed / stat.total) * 100
+                          }%`,
                         }}
                         title={`${stat.completed}/${stat.total} completed`}
                       />
