@@ -6,7 +6,7 @@ const requiredEnvKeys = [
   'FIREBASE_CLIENT_EMAIL',
   'FIREBASE_PRIVATE_KEY'
 ];
-
+// Returns an array of missing environment variable keys required for Firebase Admin SDK
 export const getMissingFirebaseAdminEnv = () =>
   requiredEnvKeys.filter((key) => !process.env[key]);
 
