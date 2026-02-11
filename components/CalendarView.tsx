@@ -34,10 +34,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks }) => {
   const emptyDays = Array(startDay).fill(null);
 
   const selectedTasks = tasks.filter(
-    (t) => isSameDay(new Date(t.date), selectedDate) && !t.completed
+    (t) => t.date && isSameDay(new Date(t.date), selectedDate) && !t.completed
   );
   const monthlyTasks = tasks.filter((t) =>
-    isSameMonth(new Date(t.date), currentMonth)
+    t.date && isSameMonth(new Date(t.date), currentMonth)
   );
   const monthlyCompleted = monthlyTasks.filter((t) => t.completed).length;
 
@@ -130,7 +130,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tasks }) => {
 
               {daysInMonth.map((day) => {
                 const dayTasks = tasks.filter((t) =>
-                  isSameDay(new Date(t.date), day)
+                  t.date && isSameDay(new Date(t.date), day)
                 );
                 const isSelected = isSameDay(day, selectedDate);
                 const isToday = isSameDay(day, new Date());
