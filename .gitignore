@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Firebase admin service account (DO NOT COMMIT)
+to-do-app-70bd5-firebase-adminsdk-fbsvc-ddb527dac9.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

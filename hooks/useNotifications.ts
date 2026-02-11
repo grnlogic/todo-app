@@ -62,7 +62,9 @@ export const useNotifications = () => {
       const msg = error instanceof Error ? error.message : String(error);
       setLastError(msg);
       console.error('Error requesting permission:', error);
-      throw error;
+      // Jangan lempar error ke pemanggil supaya proses lain (mis. simpan task)
+      // tetap jalan. Pemanggil bisa cek lastError untuk menampilkan pesan.
+      return null;
     }
   };
 

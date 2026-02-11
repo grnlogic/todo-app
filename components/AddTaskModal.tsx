@@ -23,6 +23,8 @@ interface AddTaskModalProps {
     },
     existingId?: string
   ) => void;
+  notificationError?: string | null;
+  clearNotificationError?: () => void;
 }
 
 const AddTaskModal: React.FC<AddTaskModalProps> = ({
@@ -30,6 +32,8 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   onClose,
   initialTask,
   onSave,
+  notificationError,
+  clearNotificationError,
 }) => {
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
@@ -65,8 +69,17 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
     return () => window.removeEventListener("resize", checkDesktop);
   }, []);
 
+  const formatTimeInput = (value: string) => {
+    // Ambil hanya digit
+    const digits = value.replace(/\D/g, "").slice(0, 4);
+    if (digits.length <= 2) return digits;
+    return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+  };
+
   const handleSave = () => {
     if (!title.trim()) return;
+    // Bersihkan pesan error notifikasi saat menyimpan lagi
+    if (clearNotificationError) clearNotificationError();
     onSave(
       {
         title,
@@ -183,17 +196,24 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
           </div>
 
           <div className="flex space-x-4">
-            {/* Time Input */}
+            {/* Time Input (24-hour format) */}
             <div className="flex-1 space-y-2">
               <label className="text-xs font-bold text-slate-500 uppercase flex items-center">
-                <Clock size={12} className="mr-1" /> Time
+                <Clock size={12} className="mr-1" /> Time (24-hour)
               </label>
               <input
-                type="time"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-2][0-9]:[0-5][0-9]"
+                placeholder="HH:MM"
                 value={time}
-                onChange={(e) => setTime(e.target.value)}
+                onChange={(e) => setTime(formatTimeInput(e.target.value))}
+                maxLength={5}
                 className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors cursor-pointer"
               />
+              <p className="text-[10px] text-slate-500">
+                Gunakan format 24 jam, contoh: 09:30, 13:00, 21:45
+              </p>
             </div>
             {/* Date Input */}
             <div className="flex-1 space-y-2">
@@ -331,6 +351,12 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
                   <option value="days">Days before</option>
                 </select>
               </div>
+            )}
+
+            {notificationError && (
+              <p className="text-xs text-red-300 bg-red-500/10 border border-red-500/30 px-3 py-2 rounded-xl">
+                {notificationError}
+              </p>
             )}
           </div>
 

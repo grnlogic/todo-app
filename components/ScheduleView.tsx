@@ -21,6 +21,12 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({
     day: "Monday",
   });
 
+  const formatTimeInput = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 4);
+    if (digits.length <= 2) return digits;
+    return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+  };
+
   const days = [
     "Monday",
     "Tuesday",
@@ -208,25 +214,43 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-xs font-medium text-slate-400 mb-1">
-                            Start Time
+                            Start Time (24-hour)
                         </label>
                         <input
                             required
-                            type="time"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-2][0-9]:[0-5][0-9]"
+                            placeholder="HH:MM"
                             value={newCourse.startTime || ""}
-                            onChange={(e) => setNewCourse({ ...newCourse, startTime: e.target.value })}
+                            onChange={(e) =>
+                              setNewCourse({
+                                ...newCourse,
+                                startTime: formatTimeInput(e.target.value),
+                              })
+                            }
+                            maxLength={5}
                             className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:border-violet-500 outline-none"
                         />
                     </div>
                     <div>
                         <label className="block text-xs font-medium text-slate-400 mb-1">
-                            End Time
+                            End Time (24-hour)
                         </label>
                         <input
                             required
-                            type="time"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-2][0-9]:[0-5][0-9]"
+                            placeholder="HH:MM"
                             value={newCourse.endTime || ""}
-                            onChange={(e) => setNewCourse({ ...newCourse, endTime: e.target.value })}
+                            onChange={(e) =>
+                              setNewCourse({
+                                ...newCourse,
+                                endTime: formatTimeInput(e.target.value),
+                              })
+                            }
+                            maxLength={5}
                             className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-2.5 text-white text-sm focus:border-violet-500 outline-none"
                         />
                     </div>

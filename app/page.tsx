@@ -1,17 +1,37 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
-import HomeView from "@/components/HomeView";
-import TaskListView from "@/components/TaskListView";
-import CalendarView from "@/components/CalendarView";
-import SettingsView from "@/components/SettingsView";
-import ScheduleView from "@/components/ScheduleView";
-import AddTaskModal from "@/components/AddTaskModal";
 import Toast, { ToastState } from "@/components/Toast";
 import { Task, Priority, Tab, Course } from "@/types";
 import { AnimatePresence } from "framer-motion";
 import { useNotifications } from "@/hooks/useNotifications";
+
+const HomeView = dynamic(() => import("@/components/HomeView"), {
+  loading: () => <div className="text-slate-400">Loading home...</div>,
+});
+
+const TaskListView = dynamic(() => import("@/components/TaskListView"), {
+  loading: () => <div className="text-slate-400">Loading tasks...</div>,
+});
+
+const CalendarView = dynamic(() => import("@/components/CalendarView"), {
+  loading: () => <div className="text-slate-400">Loading calendar...</div>,
+});
+
+const SettingsView = dynamic(() => import("@/components/SettingsView"), {
+  loading: () => <div className="text-slate-400">Loading settings...</div>,
+});
+
+const ScheduleView = dynamic(() => import("@/components/ScheduleView"), {
+  loading: () => <div className="text-slate-400">Loading schedule...</div>,
+});
+
+const AddTaskModal = dynamic(() => import("@/components/AddTaskModal"), {
+  loading: () => <div className="text-slate-400">Opening form...</div>,
+  ssr: false,
+});
 
 // Use Next.js API routes
 const API_BASE = "";
@@ -25,7 +45,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [togglingTaskId, setTogglingTaskId] = useState<string | null>(null);
-  const { requestPermission } = useNotifications();
+  const { requestPermission, lastError, clearError } = useNotifications();
 
   const normalizeTask = (task: Task & { date: string | Date }): Task => ({
     ...task,
@@ -102,62 +122,66 @@ export default function Home() {
       });
       if (newTask.reminder) {
         const token = await requestPermission();
+
         if (!token) {
-          setError(
-            "Notification permission not granted. Reminder not scheduled."
-          );
-          setIsAddModalOpen(false);
-          return;
-        }
-        const scheduledAt = new Date(newTask.date);
-        const [h, m] = newTask.time.split(":").map(Number);
-        scheduledAt.setHours(h || 0, m || 0, 0, 0);
-
-        const offsetMs =
-          newTask.reminder.unit === "minutes"
-            ? newTask.reminder.amount * 60 * 1000
-            : newTask.reminder.unit === "hours"
-            ? newTask.reminder.amount * 60 * 60 * 1000
-            : newTask.reminder.amount * 24 * 60 * 60 * 1000;
-
-        const reminderTime = new Date(scheduledAt.getTime() - offsetMs);
-        if (reminderTime.getTime() <= Date.now()) {
-          setError("Reminder time must be in the future.");
+          // Izin ditolak atau FCM gagal – task tetap tersimpan,
+          // tapi kita beritahu user lewat toast & (kalau ada) pesan di modal.
+          setToast({
+            message:
+              "Reminder tidak bisa diaktifkan (cek pengaturan notifikasi / FCM). Task tetap tersimpan.",
+            type: "error",
+          });
         } else {
-          const validToken =
-            token && token !== "permission-granted" && token.length > 50
-              ? token
-              : undefined;
-          const scheduleRes = await fetch(
-            `${API_BASE}/api/notifications/schedule`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                taskId: created.id,
-                title: created.title,
-                body: `Don't forget: ${created.title}`,
-                scheduleTime: reminderTime.toISOString(),
-                userId: "default-user",
-                token: validToken,
-                data: {
-                  taskId: created.id,
-                  url: "/",
-                },
-              }),
-            }
-          );
-          if (!scheduleRes.ok) {
-            const err = await scheduleRes.json().catch(() => ({}));
-            setToast({
-              message: err?.error || "Reminder could not be scheduled",
-              type: "error",
-            });
+          const scheduledAt = new Date(newTask.date);
+          const [h, m] = newTask.time.split(":").map(Number);
+          scheduledAt.setHours(h || 0, m || 0, 0, 0);
+
+          const offsetMs =
+            newTask.reminder.unit === "minutes"
+              ? newTask.reminder.amount * 60 * 1000
+              : newTask.reminder.unit === "hours"
+              ? newTask.reminder.amount * 60 * 60 * 1000
+              : newTask.reminder.amount * 24 * 60 * 60 * 1000;
+
+          const reminderTime = new Date(scheduledAt.getTime() - offsetMs);
+          if (reminderTime.getTime() <= Date.now()) {
+            setError("Reminder time must be in the future.");
           } else {
-            setToast({
-              message: `Reminder set for ${newTask.reminder.amount} ${newTask.reminder.unit} before`,
-              type: "success",
-            });
+            const validToken =
+              token && token !== "permission-granted" && token.length > 50
+                ? token
+                : undefined;
+            const scheduleRes = await fetch(
+              `${API_BASE}/api/notifications/schedule`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  taskId: created.id,
+                  title: created.title,
+                  body: `Don't forget: ${created.title}`,
+                  scheduleTime: reminderTime.toISOString(),
+                  userId: "default-user",
+                  token: validToken,
+                  data: {
+                    taskId: created.id,
+                    url: "/",
+                  },
+                }),
+              }
+            );
+            if (!scheduleRes.ok) {
+              const err = await scheduleRes.json().catch(() => ({}));
+              setToast({
+                message: err?.error || "Reminder could not be scheduled",
+                type: "error",
+              });
+            } else {
+              setToast({
+                message: `Reminder set for ${newTask.reminder.amount} ${newTask.reminder.unit} before`,
+                type: "success",
+              });
+            }
           }
         }
       }
@@ -440,6 +464,8 @@ export default function Home() {
             }}
             initialTask={editingTask}
             onSave={handleAddTask}
+            notificationError={lastError}
+            clearNotificationError={clearError}
           />
         )}
       </AnimatePresence>
