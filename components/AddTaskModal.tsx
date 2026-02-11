@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { X, Calendar, Clock, Flag, Bell } from "lucide-react";
-import { Priority, Task } from "@/types";
+import { X, Calendar, Clock, Flag, Bell, Zap } from "lucide-react";
+import { Priority, Task, DueType } from "@/types";
 import { format } from "date-fns";
 
 interface AddTaskModalProps {
@@ -13,7 +13,8 @@ interface AddTaskModalProps {
   onSave: (
     task: {
       title: string;
-      date: Date;
+      date?: Date;
+      dueType: DueType;
       priority: Priority;
       time: string;
       reminder?: {
@@ -39,6 +40,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
   const [priority, setPriority] = useState<Priority>(Priority.MEDIUM);
   const [time, setTime] = useState(format(new Date(), "HH:mm"));
   const [date, setDate] = useState(new Date());
+  const [dueType, setDueType] = useState<DueType>(DueType.SPECIFIC_DATE);
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderAmount, setReminderAmount] = useState(60);
   const [reminderUnit, setReminderUnit] = useState<
@@ -52,11 +54,15 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
     if (isOpen && initialTask) {
       setTitle(initialTask.title);
       setPriority(initialTask.priority);
-      setDate(new Date(initialTask.date));
+      setDueType(initialTask.dueType || DueType.SPECIFIC_DATE);
+      if (initialTask.date) {
+        setDate(new Date(initialTask.date));
+      }
       setTime(initialTask.time || format(new Date(), "HH:mm"));
     } else if (isOpen && !initialTask) {
       setTitle("");
       setPriority(Priority.MEDIUM);
+      setDueType(DueType.SPECIFIC_DATE);
       setDate(new Date());
       setTime(format(new Date(), "HH:mm"));
     }
@@ -83,10 +89,11 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
     onSave(
       {
         title,
-        date,
+        date: dueType === DueType.ASAP ? undefined : date,
+        dueType,
         priority,
         time,
-        reminder: reminderEnabled
+        reminder: reminderEnabled && dueType === DueType.SPECIFIC_DATE
           ? {
               amount: Math.max(1, Number(reminderAmount) || 0),
               unit: reminderUnit,
@@ -96,6 +103,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
       initialTask?.id
     );
     setTitle("");
+    setDueType(DueType.SPECIFIC_DATE);
     setReminderEnabled(false);
     setReminderAmount(60);
     setReminderUnit("minutes");
@@ -195,39 +203,77 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
             </div>
           </div>
 
-          <div className="flex space-x-4">
-            {/* Time Input (24-hour format) */}
-            <div className="flex-1 space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase flex items-center">
-                <Clock size={12} className="mr-1" /> Time (24-hour)
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-2][0-9]:[0-5][0-9]"
-                placeholder="HH:MM"
-                value={time}
-                onChange={(e) => setTime(formatTimeInput(e.target.value))}
-                maxLength={5}
-                className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors cursor-pointer"
-              />
-              <p className="text-[10px] text-slate-500">
-                Gunakan format 24 jam, contoh: 09:30, 13:00, 21:45
+          {/* Due Type Selection */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+              Deadline Type
+            </label>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setDueType(DueType.SPECIFIC_DATE)}
+                className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all border flex items-center justify-center gap-2 ${
+                  dueType === DueType.SPECIFIC_DATE
+                    ? "bg-blue-500/20 text-blue-400 border-blue-500/50"
+                    : "bg-slate-800 border-transparent text-slate-500 hover:bg-slate-700"
+                }`}
+              >
+                <Calendar size={16} />
+                Set Deadline
+              </button>
+              <button
+                onClick={() => setDueType(DueType.ASAP)}
+                className={`flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all border flex items-center justify-center gap-2 ${
+                  dueType === DueType.ASAP
+                    ? "bg-red-500/20 text-red-400 border-red-500/50"
+                    : "bg-slate-800 border-transparent text-slate-500 hover:bg-slate-700"
+                }`}
+              >
+                <Zap size={16} />
+                ASAP (No Deadline)
+              </button>
+            </div>
+            {dueType === DueType.ASAP && (
+              <p className="text-xs text-slate-400 bg-red-500/5 border border-red-500/20 px-3 py-2 rounded-xl">
+                <span className="font-semibold text-red-400">⚡ Urgent:</span> Task ini akan muncul paling atas karena tidak ada deadline dan harus segera dikerjakan.
               </p>
-            </div>
-            {/* Date Input */}
-            <div className="flex-1 space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase flex items-center">
-                <Calendar size={12} className="mr-1" /> Date
-              </label>
-              <input
-                type="date"
-                value={format(date, "yyyy-MM-dd")}
-                onChange={(e) => setDate(new Date(e.target.value))}
-                className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors cursor-pointer"
-              />
-            </div>
+            )}
           </div>
+
+          {dueType === DueType.SPECIFIC_DATE && (
+            <div className="flex space-x-4">
+              {/* Time Input (24-hour format) */}
+              <div className="flex-1 space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase flex items-center">
+                  <Clock size={12} className="mr-1" /> Time (24-hour)
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-2][0-9]:[0-5][0-9]"
+                  placeholder="HH:MM"
+                  value={time}
+                  onChange={(e) => setTime(formatTimeInput(e.target.value))}
+                  maxLength={5}
+                  className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors cursor-pointer"
+                />
+                <p className="text-[10px] text-slate-500">
+                  Gunakan format 24 jam, contoh: 09:30, 13:00, 21:45
+                </p>
+              </div>
+              {/* Date Input */}
+              <div className="flex-1 space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase flex items-center">
+                  <Calendar size={12} className="mr-1" /> Date
+                </label>
+                <input
+                  type="date"
+                  value={format(date, "yyyy-MM-dd")}
+                  onChange={(e) => setDate(new Date(e.target.value))}
+                  className="w-full bg-slate-950/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-colors cursor-pointer"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Priority Selection */}
           <div className="space-y-2">
@@ -255,8 +301,9 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
             </div>
           </div>
 
-          {/* Reminder Selection */}
-          <div className="space-y-3">
+          {/* Reminder Selection - Only for tasks with specific dates */}
+          {dueType === DueType.SPECIFIC_DATE && (
+            <div className="space-y-3">
             <label className="text-xs font-bold text-slate-500 uppercase flex items-center">
               <Bell size={12} className="mr-1" /> Reminder
             </label>
@@ -358,7 +405,8 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({
                 {notificationError}
               </p>
             )}
-          </div>
+            </div>
+          )}
 
           {/* Save Button */}
           <div className="pt-4">

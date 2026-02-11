@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
 import Toast, { ToastState } from "@/components/Toast";
-import { Task, Priority, Tab, Course } from "@/types";
+import { Task, Priority, Tab, Course, DueType } from "@/types";
 import { AnimatePresence } from "framer-motion";
 import { useNotifications } from "@/hooks/useNotifications";
 
@@ -45,11 +45,13 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [togglingTaskId, setTogglingTaskId] = useState<string | null>(null);
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const { requestPermission, lastError, clearError } = useNotifications();
 
-  const normalizeTask = (task: Task & { date: string | Date }): Task => ({
+  const normalizeTask = (task: Task & { date?: string | Date | null }): Task => ({
     ...task,
-    date: new Date(task.date),
+    date: task.date ? new Date(task.date) : undefined,
+    dueType: task.dueType || DueType.SPECIFIC_DATE,
   });
 
   useEffect(() => {
@@ -87,7 +89,8 @@ export default function Home() {
   const handleAddTask = async (
     newTask: {
       title: string;
-      date: Date;
+      date?: Date;
+      dueType: DueType;
       priority: Priority;
       time: string;
       reminder?: {
@@ -107,7 +110,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...newTask,
-          date: newTask.date.toISOString(),
+          date: newTask.date ? newTask.date.toISOString() : null,
         }),
       });
       if (!res.ok) throw new Error("Failed to add task");
@@ -120,7 +123,7 @@ export default function Home() {
         console.log("Updated tasks:", updated);
         return updated;
       });
-      if (newTask.reminder) {
+      if (newTask.reminder && newTask.date) {
         const token = await requestPermission();
 
         if (!token) {
@@ -196,6 +199,7 @@ export default function Home() {
     const target = tasks.find((t) => t.id === id);
     if (!target) return;
     setTogglingTaskId(id);
+    if (!target.completed) setToast({ message: "Tunggu sebentar...", type: "info" });
     try {
       const res = await fetch(`${API_BASE}/api/tasks/${id}`, {
         method: "PATCH",
@@ -208,7 +212,7 @@ export default function Home() {
         prev.map((t) => (t.id === id ? normalizeTask(updated) : t))
       );
       setToast({
-        message: target.completed ? "Task unchecked" : "Task completed",
+        message: target.completed ? "Task unchecked" : "Tugas selesai",
         type: "success",
       });
     } catch (err) {
@@ -220,16 +224,20 @@ export default function Home() {
   };
 
   const handleDeleteTask = async (id: string) => {
+    setDeletingTaskId(id);
+    setToast({ message: "Tunggu sebentar...", type: "info" });
     try {
       const res = await fetch(`${API_BASE}/api/tasks/${id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete task");
       setTasks((prev) => prev.filter((t) => t.id !== id));
-      setToast({ message: "Task deleted", type: "success" });
+      setToast({ message: "Tugas dihapus", type: "success" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete task");
-      setToast({ message: "Failed to delete task", type: "error" });
+      setToast({ message: "Gagal menghapus tugas", type: "error" });
+    } finally {
+      setDeletingTaskId(null);
     }
   };
 
@@ -237,7 +245,8 @@ export default function Home() {
     existingId: string,
     data: {
       title: string;
-      date: Date;
+      date?: Date;
+      dueType: DueType;
       priority: Priority;
       time: string;
     }
@@ -248,7 +257,8 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: data.title,
-          date: data.date.toISOString(),
+          date: data.date ? data.date.toISOString() : null,
+          dueType: data.dueType,
           time: data.time,
           priority: data.priority,
         }),
@@ -416,6 +426,7 @@ export default function Home() {
               setIsAddModalOpen(true);
             }}
             togglingTaskId={togglingTaskId}
+            deletingTaskId={deletingTaskId}
           />
         );
       case "schedule":

@@ -1,0 +1,110 @@
+firebase.ts:131 FCM getToken failed: Registration failed - push service error
+error @ intercept-console-error.js:52
+requestNotificationPermission @ firebase.ts:131
+await in requestNotificationPermission
+handleTestNotification @ SettingsView.tsx:24
+executeDispatch @ react-dom-client.development.js:20544
+runWithFiberInDEV @ react-dom-client.development.js:987
+processDispatchQueue @ react-dom-client.development.js:20594
+eval @ react-dom-client.development.js:21165
+batchedUpdates$1 @ react-dom-client.development.js:3378
+dispatchEventForPluginEventSystem @ react-dom-client.development.js:20748
+dispatchEvent @ react-dom-client.development.js:25694
+dispatchDiscreteEvent @ react-dom-client.development.js:25662
+<button>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:342
+SettingsView @ SettingsView.tsx:205
+react_stack_bottom_frame @ react-dom-client.development.js:28039
+renderWithHooksAgain @ react-dom-client.development.js:8085
+renderWithHooks @ react-dom-client.development.js:7997
+updateFunctionComponent @ react-dom-client.development.js:10502
+beginWork @ react-dom-client.development.js:12086
+runWithFiberInDEV @ react-dom-client.development.js:987
+performUnitOfWork @ react-dom-client.development.js:18998
+workLoopConcurrentByScheduler @ react-dom-client.development.js:18992
+renderRootConcurrent @ react-dom-client.development.js:18974
+performWorkOnRoot @ react-dom-client.development.js:17835
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:20385
+performWorkUntilDeadline @ scheduler.development.js:45
+<...>
+exports.jsx @ react-jsx-runtime.development.js:342
+LoadableComponent @ loadable.js:57
+react_stack_bottom_frame @ react-dom-client.development.js:28039
+renderWithHooksAgain @ react-dom-client.development.js:8085
+renderWithHooks @ react-dom-client.development.js:7997
+updateFunctionComponent @ react-dom-client.development.js:10502
+beginWork @ react-dom-client.development.js:12137
+runWithFiberInDEV @ react-dom-client.development.js:987
+performUnitOfWork @ react-dom-client.development.js:18998
+workLoopSync @ react-dom-client.development.js:18826
+renderRootSync @ react-dom-client.development.js:18807
+performWorkOnRoot @ react-dom-client.development.js:17836
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:20385
+performWorkUntilDeadline @ scheduler.development.js:45
+<LoadableComponent>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:342
+renderContent @ page.tsx:432
+Home @ page.tsx:453
+react_stack_bottom_frame @ react-dom-client.development.js:28039
+renderWithHooksAgain @ react-dom-client.development.js:8085
+renderWithHooks @ react-dom-client.development.js:7997
+updateFunctionComponent @ react-dom-client.development.js:10502
+beginWork @ react-dom-client.development.js:12137
+runWithFiberInDEV @ react-dom-client.development.js:987
+performUnitOfWork @ react-dom-client.development.js:18998
+workLoopSync @ react-dom-client.development.js:18826
+renderRootSync @ react-dom-client.development.js:18807
+performWorkOnRoot @ react-dom-client.development.js:17836
+performSyncWorkOnRoot @ react-dom-client.development.js:20400
+flushSyncWorkAcrossRoots_impl @ react-dom-client.development.js:20242
+processRootScheduleInMicrotask @ react-dom-client.development.js:20281
+eval @ react-dom-client.development.js:20419
+<Home>
+exports.jsx @ react-jsx-runtime.development.js:342
+ClientPageRoot @ client-page.js:40
+react_stack_bottom_frame @ react-dom-client.development.js:28039
+renderWithHooksAgain @ react-dom-client.development.js:8085
+renderWithHooks @ react-dom-client.development.js:7997
+updateFunctionComponent @ react-dom-client.development.js:10502
+beginWork @ react-dom-client.development.js:12086
+runWithFiberInDEV @ react-dom-client.development.js:987
+performUnitOfWork @ react-dom-client.development.js:18998
+workLoopConcurrentByScheduler @ react-dom-client.development.js:18992
+renderRootConcurrent @ react-dom-client.development.js:18974
+performWorkOnRoot @ react-dom-client.development.js:17835
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:20385
+performWorkUntilDeadline @ scheduler.development.js:45
+"use client"
+Function.all @ VM3685 <anonymous>:1
+initializeElement @ react-server-dom-webpack-client.browser.development.js:1949
+eval @ react-server-dom-webpack-client.browser.development.js:4632
+initializeModelChunk @ react-server-dom-webpack-client.browser.development.js:1837
+resolveModelChunk @ react-server-dom-webpack-client.browser.development.js:1679
+processFullStringRow @ react-server-dom-webpack-client.browser.development.js:4451
+processFullBinaryRow @ react-server-dom-webpack-client.browser.development.js:4309
+processBinaryChunk @ react-server-dom-webpack-client.browser.development.js:4532
+progress @ react-server-dom-webpack-client.browser.development.js:4808
+"use server"
+ResponseInstance @ react-server-dom-webpack-client.browser.development.js:2793
+createResponseFromOptions @ react-server-dom-webpack-client.browser.development.js:4669
+exports.createFromReadableStream @ react-server-dom-webpack-client.browser.development.js:5080
+eval @ app-index.js:150
+(app-pages-browser)/./node_modules/next/dist/client/app-index.js @ main-app.js?v=1770819920558:127
+options.factory @ webpack.js?v=1770819920558:708
+__webpack_require__ @ webpack.js?v=1770819920558:29
+fn @ webpack.js?v=1770819920558:361
+eval @ app-next-dev.js:14
+eval @ app-bootstrap.js:60
+loadScriptsInSequence @ app-bootstrap.js:25
+appBootstrap @ app-bootstrap.js:54
+eval @ app-next-dev.js:13
+(app-pages-browser)/./node_modules/next/dist/client/app-next-dev.js @ main-app.js?v=1770819920558:149
+options.factory @ webpack.js?v=1770819920558:708
+__webpack_require__ @ webpack.js?v=1770819920558:29
+__webpack_exec__ @ main-app.js?v=1770819920558:1890
+(anonymous) @ main-app.js?v=1770819920558:1891
+webpackJsonpCallback @ webpack.js?v=1770819920558:1384
+(anonymous) @ main-app.js?v=1770819920558:9
+SettingsView.tsx:111 Test notification error: Error: FCM token gagal: Registration failed - push service error. Pastikan firebase-messaging-sw.js bisa diakses (HTTPS), dan di Android coba izinkan notifikasi lalu refresh halaman.
+    at requestNotificationPermission (firebase.ts:132:11)
+    at async handleTestNotification (SettingsView.tsx:24:21)

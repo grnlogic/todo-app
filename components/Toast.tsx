@@ -2,9 +2,9 @@
 
 import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
-export type ToastType = "success" | "error";
+export type ToastType = "success" | "error" | "info";
 
 export interface ToastState {
   message: string;
@@ -37,15 +37,21 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss, duration = 3000 }) => {
             backgroundColor:
               toast.type === "success"
                 ? "rgba(34, 197, 94, 0.15)"
+                : toast.type === "info"
+                ? "rgba(100, 116, 139, 0.2)"
                 : "rgba(239, 68, 68, 0.15)",
             borderColor:
               toast.type === "success"
                 ? "rgba(34, 197, 94, 0.4)"
+                : toast.type === "info"
+                ? "rgba(100, 116, 139, 0.4)"
                 : "rgba(239, 68, 68, 0.4)",
           }}
         >
           {toast.type === "success" ? (
             <CheckCircle2 size={20} className="text-emerald-400 shrink-0" />
+          ) : toast.type === "info" ? (
+            <Loader2 size={20} className="text-slate-300 shrink-0 animate-spin" />
           ) : (
             <XCircle size={20} className="text-red-400 shrink-0" />
           )}
@@ -53,6 +59,8 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss, duration = 3000 }) => {
             className={
               toast.type === "success"
                 ? "text-emerald-200 text-sm font-medium"
+                : toast.type === "info"
+                ? "text-slate-200 text-sm font-medium"
                 : "text-red-200 text-sm font-medium"
             }
           >

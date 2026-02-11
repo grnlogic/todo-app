@@ -4,6 +4,11 @@ export enum Priority {
   LOW = 'Low',
 }
 
+export enum DueType {
+  SPECIFIC_DATE = 'SPECIFIC_DATE',
+  ASAP = 'ASAP',
+}
+
 export enum MoodType {
   VERY_HAPPY = 'VeryHappy',
   HAPPY = 'Happy',
@@ -26,7 +31,8 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  date: Date;
+  date?: Date;
+  dueType: DueType;
   time?: string;
   completed: boolean;
   priority: Priority;

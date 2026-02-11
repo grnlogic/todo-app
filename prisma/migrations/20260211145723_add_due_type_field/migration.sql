@@ -1,0 +1,6 @@
+-- CreateEnum
+CREATE TYPE "DueType" AS ENUM ('SPECIFIC_DATE', 'ASAP');
+
+-- AlterTable
+ALTER TABLE "Task" ADD COLUMN     "dueType" "DueType" NOT NULL DEFAULT 'SPECIFIC_DATE',
+ALTER COLUMN "date" DROP NOT NULL;

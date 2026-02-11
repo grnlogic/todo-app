@@ -67,6 +67,9 @@ const HomeView: React.FC<HomeViewProps> = ({
   today.setHours(0, 0, 0, 0);
 
   const todaysTasks = tasks.filter((t) => {
+    // ASAP tasks count as today's tasks
+    if (t.dueType === 'ASAP' || !t.date) return true;
+    
     const taskDate = new Date(t.date);
     taskDate.setHours(0, 0, 0, 0);
     return taskDate.getTime() === today.getTime();
@@ -79,13 +82,24 @@ const HomeView: React.FC<HomeViewProps> = ({
   };
 
   // Upcoming tasks: Show all incomplete tasks, sorted by date and time
+  // ASAP tasks (no deadline) appear first
   const upcomingTasks = tasks
     .filter((t) => !t.completed)
     .sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      if (dateA !== dateB) return dateA - dateB;
-      return toMinutes(a.time) - toMinutes(b.time);
+      // ASAP tasks (no date) go first
+      const aIsAsap = a.dueType === 'ASAP' || !a.date;
+      const bIsAsap = b.dueType === 'ASAP' || !b.date;
+      if (aIsAsap && !bIsAsap) return -1;
+      if (!aIsAsap && bIsAsap) return 1;
+      
+      // For tasks with dates, sort by date then time
+      if (a.date && b.date) {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        if (dateA !== dateB) return dateA - dateB;
+        return toMinutes(a.time) - toMinutes(b.time);
+      }
+      return 0;
     })
     .slice(0, 5);
 
@@ -94,6 +108,7 @@ const HomeView: React.FC<HomeViewProps> = ({
   );
   const weeklyStats = weekDays.map((day) => {
     const dayTasks = tasks.filter((t) => {
+      if (!t.date) return false; // ASAP tasks don't belong to any specific day
       const taskDate = new Date(t.date);
       return isSameDay(taskDate, day);
     });
@@ -232,18 +247,27 @@ const HomeView: React.FC<HomeViewProps> = ({
               {tasks
                 .filter((t) => t.completed)
                 .sort((a, b) => {
-                  const dateA = new Date(a.date).getTime();
-                  const dateB = new Date(b.date).getTime();
-                  if (dateA !== dateB) return dateB - dateA;
-                  return toMinutes(b.time) - toMinutes(a.time);
+                  // Tasks with dates
+                  if (a.date && b.date) {
+                    const dateA = new Date(a.date).getTime();
+                    const dateB = new Date(b.date).getTime();
+                    if (dateA !== dateB) return dateB - dateA;
+                    return toMinutes(b.time) - toMinutes(a.time);
+                  }
+                  // ASAP tasks without dates go first
+                  if (!a.date && b.date) return -1;
+                  if (a.date && !b.date) return 1;
+                  return 0;
                 })
                 .map((task) => {
-                  const taskDate = new Date(task.date);
-                  const dateLabel = isSameDay(taskDate, today)
-                    ? "Hari ini"
-                    : isSameDay(taskDate, subDays(today, 1))
-                    ? "Kemarin"
-                    : format(taskDate, "dd MMM");
+                  const taskDate = task.date ? new Date(task.date) : null;
+                  const dateLabel = taskDate
+                    ? isSameDay(taskDate, today)
+                      ? "Hari ini"
+                      : isSameDay(taskDate, subDays(today, 1))
+                      ? "Kemarin"
+                      : format(taskDate, "dd MMM")
+                    : "ASAP";
                   return (
                     <div
                       key={task.id}
@@ -437,9 +461,11 @@ const HomeView: React.FC<HomeViewProps> = ({
           <div className="space-y-3">
             {upcomingTasks.length > 0 ? (
               upcomingTasks.map((task) => {
-                const taskDate = new Date(task.date);
-                const isToday = isSameDay(taskDate, new Date());
-                const dateLabel = isToday
+                const taskDate = task.date ? new Date(task.date) : null;
+                const isToday = taskDate ? isSameDay(taskDate, new Date()) : false;
+                const dateLabel = task.dueType === 'ASAP' || !taskDate
+                  ? "ASAP"
+                  : isToday
                   ? "Today"
                   : format(taskDate, "MMM dd");
 
@@ -451,7 +477,9 @@ const HomeView: React.FC<HomeViewProps> = ({
                     <div className="flex items-center space-x-3 flex-1">
                       <div
                         className={`w-2.5 h-2.5 rounded-full ${
-                          task.priority === Priority.HIGH
+                          task.dueType === 'ASAP'
+                            ? "bg-red-500"
+                            : task.priority === Priority.HIGH
                             ? "bg-red-400"
                             : task.priority === Priority.MEDIUM
                             ? "bg-amber-400"

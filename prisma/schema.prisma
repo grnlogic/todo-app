@@ -33,7 +33,8 @@ model Quote {
 model Task {
     id               String    @id
     title            String
-    date             DateTime
+    date             DateTime?
+    dueType          DueType   @default(SPECIFIC_DATE)
     time             String?
     completed        Boolean   @default(false)
     priority         Priority  @default(Medium)
@@ -123,6 +124,11 @@ enum Priority {
     High
     Medium
     Low
+}
+
+enum DueType {
+    SPECIFIC_DATE
+    ASAP
 }
 
 enum NotificationStatus {
